@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shanghai Sailing Schedule Dashboard</title>
+<style>
+  :root{
+    --bg:#0f1521; --panel:#161f2e; --panel2:#1c2637; --border:#2a3549;
+    --text:#e7edf7; --muted:#93a1b8; --accent:#4da3ff; --accent2:#7bd88f;
+    --chip:#22304a; --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{padding:20px 28px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#131b29,#0f1521);}
+  header h1{margin:0 0 4px;font-size:22px;font-weight:700;}
+  header p{margin:0;color:var(--muted);font-size:13px;}
+  .wrap{max-width:1400px;margin:0 auto;padding:22px 28px 60px;}
+
+  .routes{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .route-btn{padding:10px 18px;border-radius:999px;border:1px solid var(--border);background:var(--panel);
+    color:var(--muted);cursor:pointer;font-size:14px;font-weight:600;transition:.15s;}
+  .route-btn.active{background:var(--accent);color:#06121f;border-color:var(--accent);}
+  .route-btn:hover{border-color:var(--accent);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+  .stat-card .num{font-size:24px;font-weight:700;}
+  .stat-card .lbl{color:var(--muted);font-size:12px;margin-top:2px;}
+
+  .carriers{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  .carrier-toggle{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;
+    border:1.5px solid var(--border);background:var(--panel);cursor:pointer;user-select:none;transition:.15s;opacity:.5;}
+  .carrier-toggle.on{opacity:1;border-color:var(--carrier-color,var(--accent));box-shadow:0 0 0 1px var(--carrier-color,var(--accent)) inset;}
+  .carrier-toggle .logo-box{width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .carrier-toggle .logo-box img{max-width:24px;max-height:24px;object-fit:contain;}
+  .carrier-toggle .badge-text{font-weight:800;font-size:11px;color:#fff;}
+  .carrier-toggle .name{font-size:13px;font-weight:600;}
+  .carrier-toggle .count{font-size:11px;color:var(--muted);}
+  .carrier-toggle.disabled{opacity:.25;cursor:not-allowed;}
+
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .cal-head h2{margin:0;font-size:17px;}
+  .cal-nav{display:flex;gap:8px;}
+  .cal-nav button{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;}
+  .cal-nav button:hover{border-color:var(--accent);}
+  .cal-nav button:disabled{opacity:.3;cursor:default;}
+
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-dow{text-align:center;color:var(--muted);font-size:11px;font-weight:700;padding-bottom:4px;text-transform:uppercase;}
+  .cal-cell{min-height:86px;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--panel2);
+    display:flex;flex-direction:column;gap:3px;cursor:default;}
+  .cal-cell.empty{background:transparent;border-color:transparent;}
+  .cal-cell.today{border-color:var(--accent);}
+  .cal-date{font-size:11px;color:var(--muted);font-weight:700;}
+  .cal-chip{font-size:10.5px;padding:2px 6px;border-radius:6px;background:var(--chip);cursor:pointer;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--accent);}
+  .cal-chip:hover{background:#2c3c5c;}
+  .cal-more{font-size:10px;color:var(--muted);cursor:pointer;}
+
+  .detail-title{font-size:15px;font-weight:700;margin:0 0 10px;}
+  .empty-hint{color:var(--muted);font-size:13px;}
+  .sail-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2);}
+  .sail-card .vessel{font-weight:700;font-size:14px;margin-bottom:2px;}
+  .sail-card .route-line{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .sail-meta{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap;}
+  .sail-meta b{color:var(--text);}
+  .lines-list{display:flex;flex-direction:column;gap:6px;}
+  .line-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);
+    border-radius:8px;padding:6px 8px;}
+  .line-row .logo-box{width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .line-row .logo-box img{max-width:17px;max-height:17px;object-fit:contain;}
+  .line-row .badge-text{font-weight:800;font-size:9px;color:#fff;}
+  .line-row .line-info{font-size:11.5px;line-height:1.4;}
+  .line-row .line-info .cname{font-weight:700;}
+  .line-row .line-info .vinfo{color:var(--muted);}
+  .routing-tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:6px;margin-left:6px;}
+  .routing-tag.direct{background:rgba(123,216,143,.15);color:var(--accent2);}
+  .routing-tag.ts{background:rgba(255,180,90,.15);color:#ffb45a;}
+
+  table.list-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  table.list-table th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);}
+  table.list-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.list-table tr:hover td{background:var(--panel2);}
+  .mini-logo{width:18px;height:18px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;margin-right:3px;vertical-align:middle;}
+  .mini-logo img{max-width:13px;max-height:13px;object-fit:contain;}
+  .mini-logo .badge-text{font-size:6.5px;font-weight:800;color:#fff;}
+
+  .list-wrap{margin-top:22px;}
+  .list-wrap h2{font-size:16px;margin:0 0 10px;}
+  .table-scroll{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+
+  footer{color:var(--muted);font-size:11.5px;text-align:center;padding:20px;}
+  .status-note{font-size:11.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);
+    border-radius:8px;padding:10px 14px;margin-bottom:18px;}
+  .status-note b{color:var(--text);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🚢 Shanghai Sailing Schedule &mdash; Laem Chabang / Ho Chi Minh / Manzanillo</h1>
+  <p id="periodText"></p>
+</header>
+<div class="wrap">
+
+  <div class="status-note" id="statusNote"></div>
+
+  <div class="routes" id="routeButtons"></div>
+
+  <div class="stats" id="statCards"></div>
+
+  <div class="carriers" id="carrierToggles"></div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="cal-head">
+        <h2 id="monthLabel"></h2>
+        <div class="cal-nav">
+          <button id="prevMonth">&larr; Prev</button>
+          <button id="nextMonth">Next &rarr;</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="panel">
+      <p class="detail-title" id="detailTitle">เลือกวันที่เพื่อดูรายละเอียดเรือ</p>
+      <div id="detailBody"><p class="empty-hint">คลิกที่ช่องวันที่ในปฏิทินซึ่งมีเรือ เพื่อดูรายละเอียด</p></div>
+    </div>
+  </div>
+
+  <div class="list-wrap">
+    <h2>รายการเรือทั้งหมด (ตามเส้นทาง/สายเรือที่เลือก)</h2>
+    <div class="table-scroll">
+      <table class="list-table">
+        <thead>
+          <tr><th>ETD</th><th>เรือ</th><th>ETA</th><th>Transit</th><th>Routing</th><th>สายเรือ</th></tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>สร้างโดยรวมข้อมูลจากสคริปต์ Python ในโฟลเดอร์ SHATH / SHASGN / SHAZLO &middot; อัปเดตล่าสุด: <span id="genTime"></span></footer>
+</div>
+
+<script id="app-data" type="application/json">__DATA_JSON__</script>
+<script>
+const DATA = JSON.parse(document.getElementById('app-data').textContent);
+
+const state = {
+  route: DATA.routes[0].code,
+  activeCarriers: new Set(Object.keys(DATA.carriers)),
+  monthIndex: 0, // 0=Sep,1=Oct,2=Nov relative to period.start month
+  selectedDate: null,
+};
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function fmtDate(s){ return s || "-"; }
+
+function carrierLogoHtml(code, size){
+  const c = DATA.carriers[code];
+  if(!c) return `<div class="logo-box" style="background:#888"><span class="badge-text">${code}</span></div>`;
+  if(c.logo){
+    return `<div class="logo-box" style="width:${size}px;height:${size}px;"><img src="assets/${c.logo}" alt="${code}"></div>`;
+  }
+  return `<div class="logo-box" style="background:${c.color};width:${size}px;height:${size}px;"><span class="badge-text">${code}</span></div>`;
+}
+
+function buildRouteButtons(){
+  const el = document.getElementById('routeButtons');
+  el.innerHTML = DATA.routes.map(r =>
+    `<button class="route-btn ${r.code===state.route?'active':''}" data-code="${r.code}">🇨🇳→ ${r.short}</button>`
+  ).join('');
+  el.querySelectorAll('.route-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.route = btn.dataset.code;
+      state.selectedDate = null;
+      render();
+    });
+  });
+}
+
+function currentRouteSailings(){
+  return DATA.sailings.filter(s => s.route_code === state.route);
+}
+
+function filteredSailings(){
+  return currentRouteSailings().filter(s => s.lines.some(l => state.activeCarriers.has(l.carrier)));
+}
+
+function buildStats(){
+  const rows = filteredSailings();
+  const uniqueVessels = new Set(rows.map(r=>r.vessel.toUpperCase())).size;
+  const directCount = rows.filter(r=>r.routing==='Direct').length;
+  const carrierSet = new Set();
+  rows.forEach(r=>r.lines.forEach(l=>carrierSet.add(l.carrier)));
+  const multiLine = rows.filter(r=>new Set(r.lines.map(l=>l.carrier)).size>1).length;
+
+  const cards = [
+    {num: rows.length, lbl:"เที่ยวเรือทั้งหมด (หลังรวมซ้ำ)"},
+    {num: uniqueVessels, lbl:"จำนวนเรือ (ลำ) ที่ไม่ซ้ำ"},
+    {num: directCount, lbl:"เที่ยวตรง (Direct)"},
+    {num: multiLine, lbl:"เที่ยวที่หลายสายเรือ Share กัน"},
+    {num: carrierSet.size, lbl:"จำนวนสายเรือที่มีข้อมูล"},
+  ];
+  document.getElementById('statCards').innerHTML = cards.map(c=>
+    `<div class="stat-card"><div class="num">${c.num}</div><div class="lbl">${c.lbl}</div></div>`
+  ).join('');
+}
+
+function buildCarrierToggles(){
+  const rows = currentRouteSailings();
+  const counts = {};
+  Object.keys(DATA.carriers).forEach(c=>counts[c]=0);
+  rows.forEach(r=>{
+    const seen = new Set();
+    r.lines.forEach(l=>{ if(!seen.has(l.carrier)){ counts[l.carrier]++; seen.add(l.carrier);} });
+  });
+
+  const el = document.getElementById('carrierToggles');
+  el.innerHTML = Object.entries(DATA.carriers).map(([code,c])=>{
+    const has = counts[code] > 0;
+    const on = state.activeCarriers.has(code);
+    return `<div class="carrier-toggle ${on?'on':''} ${has?'':'disabled'}" data-code="${code}" style="--carrier-color:${c.color}">
+      ${carrierLogoHtml(code, 30)}
+      <div><div class="name">${c.label}</div><div class="count">${counts[code]} เที่ยว</div></div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.carrier-toggle').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      const code = t.dataset.code;
+      if(counts[code]===0) return;
+      if(state.activeCarriers.has(code)) state.activeCarriers.delete(code);
+      else state.activeCarriers.add(code);
+      render();
+    });
+  });
+}
+
+function periodMonths(){
+  const start = new Date(DATA.period.start+"T00:00:00");
+  const end = new Date(DATA.period.end+"T00:00:00");
+  const months = [];
+  let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  while(cur <= end){
+    months.push({y:cur.getFullYear(), m:cur.getMonth()});
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+  return months;
+}
+
+function buildCalendar(){
+  const months = periodMonths();
+  if(state.monthIndex < 0) state.monthIndex = 0;
+  if(state.monthIndex > months.length-1) state.monthIndex = months.length-1;
+  const {y,m} = months[state.monthIndex];
+
+  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[m]} ${y}`;
+  document.getElementById('prevMonth').disabled = state.monthIndex===0;
+  document.getElementById('nextMonth').disabled = state.monthIndex===months.length-1;
+
+  const rows = filteredSailings();
+  const byDate = {};
+  rows.forEach(r=>{
+    (byDate[r.etd] = byDate[r.etd] || []).push(r);
+  });
+
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  let html = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entries = byDate[dateStr] || [];
+    const isToday = dateStr===todayStr;
+    const maxShow = 3;
+    let chips = entries.slice(0,maxShow).map(e=>
+      `<div class="cal-chip" data-date="${dateStr}" title="${e.vessel}">${e.vessel}</div>`
+    ).join('');
+    if(entries.length>maxShow) chips += `<div class="cal-more" data-date="${dateStr}">+${entries.length-maxShow} more</div>`;
+    html += `<div class="cal-cell ${isToday?'today':''}" data-date="${dateStr}">
+      <div class="cal-date">${d}</div>${chips}
+    </div>`;
+  }
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = html;
+  grid.querySelectorAll('[data-date]').forEach(el=>{
+    el.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      state.selectedDate = el.dataset.date;
+      renderDetail();
+    });
+  });
+}
+
+function lineRowHtml(l){
+  const c = DATA.carriers[l.carrier] || {label:l.carrier,color:'#888'};
+  return `<div class="line-row">
+    ${carrierLogoHtml(l.carrier, 22)}
+    <div class="line-info"><span class="cname">${c.label}</span><br>
+      <span class="vinfo">${l.voyage?('Voyage '+l.voyage):''}${l.service?(' &middot; '+l.service):''}${l.cutoff?(' &middot; Cut-off '+l.cutoff):''}</span>
+    </div>
+  </div>`;
+}
+
+function sailCardHtml(s){
+  const routingClass = s.routing==='Direct' ? 'direct' : 'ts';
+  return `<div class="sail-card">
+    <div class="vessel">${s.vessel}<span class="routing-tag ${routingClass}">${s.routing}</span></div>
+    <div class="route-line">Shanghai → ${s.pod}</div>
+    <div class="sail-meta">
+      <span>ETD <b>${fmtDate(s.etd)}</b></span>
+      <span>ETA <b>${fmtDate(s.eta)}</b></span>
+      <span>Transit <b>${s.transit_days ?? '-'}</b> วัน</span>
+    </div>
+    <div class="lines-list">${s.lines.map(lineRowHtml).join('')}</div>
+  </div>`;
+}
+
+function renderDetail(){
+  const title = document.getElementById('detailTitle');
+  const body = document.getElementById('detailBody');
+  if(!state.selectedDate){
+    title.textContent = "เลือกวันที่เพื่อดูรายละเอียดเรือ";
+    body.innerHTML = '<p class="empty-hint">คลิกที่ช่องวันที่ในปฏิทินซึ่งมีเรือ เพื่อดูรายละเอียด</p>';
+    return;
+  }
+  const rows = filteredSailings().filter(s=>s.etd===state.selectedDate);
+  title.textContent = `เรือออกวันที่ ${state.selectedDate} (${rows.length} ลำ)`;
+  body.innerHTML = rows.length ? rows.map(sailCardHtml).join('') : '<p class="empty-hint">ไม่มีเรือในวันนี้ตามตัวกรองที่เลือก</p>';
+}
+
+function renderList(){
+  const rows = filteredSailings().slice().sort((a,b)=>a.etd.localeCompare(b.etd));
+  const body = document.getElementById('listBody');
+  body.innerHTML = rows.map(s=>{
+    const logos = s.lines.map(l=>{
+      const c = DATA.carriers[l.carrier] || {label:l.carrier,color:'#888'};
+      const inner = c.logo ? `<img src="assets/${c.logo}" alt="${l.carrier}">` : `<span class="badge-text">${l.carrier}</span>`;
+      return `<span class="mini-logo" style="${c.logo?'':'background:'+c.color}" title="${c.label}${l.voyage?(' - Voy '+l.voyage):''}">${inner}</span>`;
+    }).join('');
+    const routingClass = s.routing==='Direct' ? 'direct' : 'ts';
+    return `<tr>
+      <td>${fmtDate(s.etd)}</td>
+      <td><b>${s.vessel}</b></td>
+      <td>${fmtDate(s.eta)}</td>
+      <td>${s.transit_days ?? '-'}</td>
+      <td><span class="routing-tag ${routingClass}">${s.routing}</span></td>
+      <td>${logos}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildStatusNote(){
+  const st = DATA.carrier_status || {};
+  const parts = [];
+  Object.entries(DATA.carriers).forEach(([code,c])=>{
+    const perRoute = st[code] || {};
+    const summary = DATA.routes.map(r=>{
+      const s = perRoute[r.code] || "unavailable";
+      const icon = s==='live' ? '✅ live' : s==='cached' ? '🗄️ cached' : s==='skipped' ? '⏭️ skipped' : '⚠️ no data';
+      return `${r.short}: ${icon}`;
+    }).join(', ');
+    parts.push(`<b>${c.label}</b> &mdash; ${summary}`);
+  });
+  document.getElementById('statusNote').innerHTML = "สถานะข้อมูลต่อสายเรือ: <br>" + parts.join(" <br>");
+}
+
+function render(){
+  buildRouteButtons();
+  buildCarrierToggles();
+  buildStats();
+  buildCalendar();
+  renderDetail();
+  renderList();
+}
+
+document.getElementById('prevMonth').addEventListener('click', ()=>{ state.monthIndex--; buildCalendar(); });
+document.getElementById('nextMonth').addEventListener('click', ()=>{ state.monthIndex++; buildCalendar(); });
+
+document.getElementById('periodText').textContent =
+  `Origin: Shanghai (CNSHA)  ·  ช่วงเวลา ${DATA.period.start} ถึง ${DATA.period.end}`;
+document.getElementById('genTime').textContent = DATA.generated_at;
+
+buildStatusNote();
+render();
+</script>
+</body>
+</html>

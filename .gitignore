@@ -1,0 +1,26 @@
+# Intermediate per-carrier fetch outputs (regenerable by build_schedule_dashboard.py)
+SHATH/cosco_schedule.xlsx
+SHATH/yangming_schedule.xlsx
+SHATH/one_schedule.json
+SHATH/one_schedule_raw.json
+SHATH/route_raw_rows.json
+SHATH/downloads/
+SHASGN/cosco_schedule.xlsx
+SHASGN/yangming_schedule.xlsx
+SHASGN/one_schedule_raw.json
+SHASGN/route_raw_rows.json
+SHASGN/downloads/
+SHAZLO/cosco_schedule.xlsx
+SHAZLO/yangming_schedule.xlsx
+SHAZLO/one_schedule_raw.json
+SHAZLO/route_raw_rows.json
+SHAZLO/downloads/
+
+build_log.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+desktop.ini
