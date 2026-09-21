@@ -1,400 +1,637 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shanghai Sailing Schedule Dashboard</title>
+<title>Shanghai Sailing Schedule</title>
 <style>
   :root{
-    --bg:#0f1521; --panel:#161f2e; --panel2:#1c2637; --border:#2a3549;
-    --text:#e7edf7; --muted:#93a1b8; --accent:#4da3ff; --accent2:#7bd88f;
-    --chip:#22304a; --radius:12px;
+    --bg:#f3f6fc; --card:#ffffff; --ink:#18263c; --muted:#66768d; --line:#e2e8f3; --line2:#eef2f9;
+    --brand:#2563eb; --brand-soft:#e8f0ff; --good:#15803d; --good-soft:#e3f6ea; --warn:#b45309; --warn-soft:#fdf0dc;
+    --shadow:0 1px 2px rgba(24,38,60,.05),0 6px 20px rgba(24,38,60,.06);
+    --shadow-lg:0 12px 40px rgba(24,38,60,.18);
+    --radius:16px;
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:20px 28px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#131b29,#0f1521);}
-  header h1{margin:0 0 4px;font-size:22px;font-weight:700;}
-  header p{margin:0;color:var(--muted);font-size:13px;}
-  .wrap{max-width:1400px;margin:0 auto;padding:22px 28px 60px;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","Noto Sans Thai",Tahoma,system-ui,sans-serif;font-size:14px;line-height:1.45;}
+  button{font:inherit;color:inherit;cursor:pointer;}
+  .wrap{max-width:1440px;margin:0 auto;padding:0 28px 60px;}
 
-  .routes{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
-  .route-btn{padding:10px 18px;border-radius:999px;border:1px solid var(--border);background:var(--panel);
-    color:var(--muted);cursor:pointer;font-size:14px;font-weight:600;transition:.15s;}
-  .route-btn.active{background:var(--accent);color:#06121f;border-color:var(--accent);}
-  .route-btn:hover{border-color:var(--accent);}
+  /* ---------- header ---------- */
+  header.hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#dbeafe 0%,#eaf3ff 45%,#f3f6fc 100%);
+    border-bottom:1px solid var(--line);}
+  .hero-inner{max-width:1440px;margin:0 auto;padding:26px 28px 82px;position:relative;z-index:2;}
+  .hero h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.3px;}
+  .hero h1 span.arrow{color:var(--brand);}
+  .hero p{margin:6px 0 0;color:var(--muted);}
+  .waves{position:absolute;left:0;right:0;bottom:0;height:46px;z-index:1;opacity:.9}
+  .waves svg{width:200%;height:100%;animation:drift 18s linear infinite;}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .ship{position:absolute;bottom:14px;left:-120px;z-index:2;width:96px;animation:sail 26s linear infinite;}
+  @keyframes sail{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 260px))}}
+  .ship svg{animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
-  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
-  .stat-card .num{font-size:24px;font-weight:700;}
-  .stat-card .lbl{color:var(--muted);font-size:12px;margin-top:2px;}
+  /* ---------- route cards ---------- */
+  .section-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:24px 0 10px;}
+  .routes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+  .route-card{position:relative;text-align:left;background:var(--card);border:2px solid transparent;border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);transition:transform .18s,border-color .18s,box-shadow .18s;}
+  .route-card:hover{transform:translateY(-3px);}
+  .route-card.active{border-color:var(--brand);background:linear-gradient(180deg,#fff,#f3f8ff);}
+  .route-card .from-to{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;}
+  .route-card .from-to small{font-weight:600;color:var(--muted);font-size:12px;}
+  .route-card .meta{margin-top:6px;color:var(--muted);font-size:12.5px;}
+  .route-card .count{position:absolute;right:16px;top:14px;background:var(--brand-soft);color:var(--brand);
+    font-weight:800;border-radius:999px;padding:2px 10px;font-size:12px;}
+  .route-card .dots{margin-top:10px;display:flex;gap:4px;flex-wrap:wrap;min-height:10px}
+  .route-card .dots i{width:9px;height:9px;border-radius:50%;display:block;}
 
-  .carriers{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
-  .carrier-toggle{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;
-    border:1.5px solid var(--border);background:var(--panel);cursor:pointer;user-select:none;transition:.15s;opacity:.5;}
-  .carrier-toggle.on{opacity:1;border-color:var(--carrier-color,var(--accent));box-shadow:0 0 0 1px var(--carrier-color,var(--accent)) inset;}
-  .carrier-toggle .logo-box{width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
-  .carrier-toggle .logo-box img{max-width:24px;max-height:24px;object-fit:contain;}
-  .carrier-toggle .badge-text{font-weight:800;font-size:11px;color:#fff;}
-  .carrier-toggle .name{font-size:13px;font-weight:600;}
-  .carrier-toggle .count{font-size:11px;color:var(--muted);}
-  .carrier-toggle.disabled{opacity:.25;cursor:not-allowed;}
+  /* ---------- carrier chips ---------- */
+  .carrier-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;}
+  .chip{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:14px;
+    padding:6px 14px 6px 6px;transition:transform .15s,border-color .15s,box-shadow .15s,opacity .15s;user-select:none;box-shadow:var(--shadow);}
+  .chip .logo{width:64px;height:38px;border-radius:9px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:3px;flex:none;}
+  .chip .logo img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+  .chip .name{font-weight:700;font-size:13px;line-height:1.15;}
+  .chip .cnt{font-size:11.5px;color:var(--muted);}
+  .chip.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent),var(--shadow);}
+  .chip:not(.on){opacity:.55;}
+  .chip:not(.disabled):hover{transform:translateY(-2px);}
+  .chip.pop{animation:pop .32s ease;}
+  @keyframes pop{0%{transform:scale(.92)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .chip.disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1);box-shadow:none;}
+  .chip.disabled .cnt{color:#9aa7ba}
+  .bar-actions{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}
+  .ghost{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:600;font-size:12.5px;transition:background .15s,border-color .15s;}
+  .ghost:hover{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+  .hint{color:var(--muted);font-size:12px;margin-top:8px}
 
-  .layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;}
-  @media(max-width:1000px){.layout{grid-template-columns:1fr;}}
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px;}
+  .search{position:relative;flex:1 1 240px;max-width:360px}
+  .search input{width:100%;padding:10px 14px 10px 38px;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;outline:none;box-shadow:var(--shadow);}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .seg{display:inline-flex;background:#e9eef8;border-radius:12px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted);transition:all .15s}
+  .seg button.on{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(24,38,60,.12)}
 
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
-  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .cal-head h2{margin:0;font-size:17px;}
-  .cal-nav{display:flex;gap:8px;}
-  .cal-nav button{background:var(--panel2);border:1px solid var(--border);color:var(--text);
-    border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;}
-  .cal-nav button:hover{border-color:var(--accent);}
-  .cal-nav button:disabled{opacity:.3;cursor:default;}
+  /* ---------- stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:22px}
+  .stat{background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;background:var(--tint,var(--brand-soft));opacity:.9}
+  .stat .num{font-size:30px;font-weight:800;letter-spacing:-.5px;position:relative;z-index:1}
+  .stat .lbl{color:var(--muted);font-size:12.5px;position:relative;z-index:1}
 
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
-  .cal-dow{text-align:center;color:var(--muted);font-size:11px;font-weight:700;padding-bottom:4px;text-transform:uppercase;}
-  .cal-cell{min-height:86px;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--panel2);
-    display:flex;flex-direction:column;gap:3px;cursor:default;}
-  .cal-cell.empty{background:transparent;border-color:transparent;}
-  .cal-cell.today{border-color:var(--accent);}
-  .cal-date{font-size:11px;color:var(--muted);font-weight:700;}
-  .cal-chip{font-size:10.5px;padding:2px 6px;border-radius:6px;background:var(--chip);cursor:pointer;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--accent);}
-  .cal-chip:hover{background:#2c3c5c;}
-  .cal-more{font-size:10px;color:var(--muted);cursor:pointer;}
+  .highlights{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+  .hl{display:flex;gap:12px;align-items:center;background:linear-gradient(90deg,#fff,#f7faff);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s}
+  .hl:hover{transform:translateY(-2px)}
+  .hl .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+  .hl b{font-size:14.5px}
+  .hl small{display:block;color:var(--muted)}
 
-  .detail-title{font-size:15px;font-weight:700;margin:0 0 10px;}
-  .empty-hint{color:var(--muted);font-size:13px;}
-  .sail-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2);}
-  .sail-card .vessel{font-weight:700;font-size:14px;margin-bottom:2px;}
-  .sail-card .route-line{font-size:12px;color:var(--muted);margin-bottom:8px;}
-  .sail-meta{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap;}
-  .sail-meta b{color:var(--text);}
-  .lines-list{display:flex;flex-direction:column;gap:6px;}
-  .line-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);
-    border-radius:8px;padding:6px 8px;}
-  .line-row .logo-box{width:22px;height:22px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
-  .line-row .logo-box img{max-width:17px;max-height:17px;object-fit:contain;}
-  .line-row .badge-text{font-weight:800;font-size:9px;color:#fff;}
-  .line-row .line-info{font-size:11.5px;line-height:1.4;}
-  .line-row .line-info .cname{font-weight:700;}
-  .line-row .line-info .vinfo{color:var(--muted);}
-  .routing-tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:6px;margin-left:6px;}
-  .routing-tag.direct{background:rgba(123,216,143,.15);color:var(--accent2);}
-  .routing-tag.ts{background:rgba(255,180,90,.15);color:#ffb45a;}
+  /* ---------- panels ---------- */
+  .panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:22px}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .panel-head h2{margin:0;font-size:18px}
+  .month-tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .month-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font-weight:600;font-size:12.5px;color:var(--muted)}
+  .month-tabs button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .nav{display:flex;gap:6px;align-items:center}
+  .nav button{border:1px solid var(--line);background:#fff;border-radius:10px;width:36px;height:34px;font-weight:700}
+  .nav button.txt{width:auto;padding:0 12px}
+  .nav button:hover{background:var(--brand-soft);border-color:var(--brand)}
 
-  table.list-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
-  table.list-table th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);}
-  table.list-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
-  table.list-table tr:hover td{background:var(--panel2);}
-  .mini-logo{width:18px;height:18px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;margin-right:3px;vertical-align:middle;}
-  .mini-logo img{max-width:13px;max-height:13px;object-fit:contain;}
-  .mini-logo .badge-text{font-size:6.5px;font-weight:800;color:#fff;}
+  .weekly{display:flex;align-items:flex-end;gap:6px;height:74px;padding:6px 2px 0;margin-bottom:6px}
+  .wk{flex:1;display:flex;flex-direction:column-reverse;justify-content:flex-start;min-width:8px;height:100%;cursor:pointer;position:relative;border-radius:5px;transition:filter .15s,transform .15s}
+  .wk:hover{filter:brightness(.92);transform:scaleY(1.03);transform-origin:bottom}
+  .wk .seg-b{width:100%;transition:height .5s cubic-bezier(.2,.8,.2,1)}
+  .wk .seg-b:first-child{border-radius:0 0 4px 4px}
+  .wk.cur{outline:2px dashed var(--brand);outline-offset:2px}
+  .weekly-cap{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .wk-box{border:1px solid var(--line2);background:#fbfcff;border-radius:14px;padding:12px 14px 8px;margin-bottom:20px}
+  .wk-box .weekly-cap b{color:var(--ink)}
+  .wk-labels{display:flex;gap:6px;margin-top:4px}
+  .wk-labels span{flex:1;min-width:8px;text-align:center;font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:visible}
+  .wk-labels span.cur{color:var(--brand);font-weight:800}
 
-  .list-wrap{margin-top:22px;}
-  .list-wrap h2{font-size:16px;margin:0 0 10px;}
-  .table-scroll{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+  .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+  .cal.slide{animation:slideIn .32s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .dow{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+  .dow.we{color:#c2410c}
+  .cell{position:relative;min-height:112px;border:1px solid var(--line2);border-radius:12px;padding:6px;background:#fbfcff;display:flex;flex-direction:column;gap:4px;transition:box-shadow .15s,border-color .15s,background .15s}
+  .cell.empty{background:transparent;border-color:transparent}
+  .cell.has{cursor:pointer;background:#fff}
+  .cell.has:hover{border-color:var(--brand);box-shadow:0 6px 18px rgba(37,99,235,.14)}
+  .cell.past{opacity:.62}
+  .cell.today{border:2px solid var(--brand);background:linear-gradient(180deg,#eef4ff,#fff)}
+  .cell.sel{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .cell .d{font-size:12px;font-weight:800;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  .cell.today .d{color:var(--brand)}
+  .cell .badge-n{background:var(--brand);color:#fff;border-radius:999px;font-size:10.5px;padding:0 7px;min-width:20px;text-align:center}
+  .vchip{display:flex;gap:6px;align-items:center;background:#f2f6fd;border-radius:7px;padding:2px 6px 2px 0;font-size:11.2px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:transform .12s,background .12s}
+  .vchip:hover{background:#e3edff;transform:translateX(2px)}
+  .vchip .stripe{width:5px;align-self:stretch;display:flex;flex-direction:column;border-radius:7px 0 0 7px;overflow:hidden;flex:none}
+  .vchip .stripe i{flex:1;display:block}
+  .vchip .nm{overflow:hidden;text-overflow:ellipsis;flex:1}
+  .vchip .x{font-size:10px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:0 5px;color:var(--brand);font-weight:800}
+  .vchip.match{outline:2px solid #f59e0b;background:#fff7e0}
+  .more{font-size:11px;color:var(--brand);font-weight:700}
 
-  footer{color:var(--muted);font-size:11.5px;text-align:center;padding:20px;}
-  .status-note{font-size:11.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);
-    border-radius:8px;padding:10px 14px;margin-bottom:18px;}
-  .status-note b{color:var(--text);}
+  /* timeline */
+  .tl-scroll{overflow-x:auto;padding-bottom:6px}
+  .tl{position:relative;min-width:900px}
+  .tl-row{display:flex;align-items:center;height:56px;border-bottom:1px dashed var(--line2)}
+  .tl-label{position:sticky;left:0;z-index:3;width:140px;flex:none;background:#fff;display:flex;align-items:center;gap:8px;height:100%;padding-right:8px}
+  .tl-label .logo{width:54px;height:32px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;padding:2px}
+  .tl-label img{max-width:100%;max-height:100%;object-fit:contain}
+  .tl-track{position:relative;flex:1;height:100%}
+  .tl-axis{display:flex;height:30px;margin-left:140px;position:relative}
+  .tl-month{position:absolute;top:0;font-size:12px;font-weight:800;color:var(--muted);border-left:2px solid var(--line);padding-left:6px;height:30px}
+  .tl-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s;z-index:2}
+  .tl-dot:hover{transform:scale(1.5);z-index:5}
+  .tl-dot.sh{box-shadow:0 0 0 3px rgba(37,99,235,.28),0 1px 4px rgba(0,0,0,.3)}
+  .tl-week{position:absolute;top:0;bottom:0;width:1px;background:var(--line2)}
+  .tl-today{position:absolute;top:30px;bottom:0;width:2px;background:var(--brand);z-index:1;opacity:.7}
+  .tl-today::before{content:"Today";white-space:nowrap;position:absolute;top:-18px;left:-18px;font-size:10.5px;background:var(--brand);color:#fff;border-radius:6px;padding:0 5px}
+
+  /* table */
+  .tbl-wrap{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{position:sticky;top:0;background:#f5f8fe;text-align:left;padding:10px 12px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;z-index:2}
+  th:hover{color:var(--brand)}
+  td{padding:9px 12px;border-top:1px solid var(--line2);vertical-align:middle}
+  tbody tr{cursor:pointer;transition:background .12s}
+  tbody tr:hover td{background:#f3f7ff}
+  tr.past td{color:#8a97ab}
+  .mini{display:inline-flex;align-items:center;justify-content:center;width:46px;height:26px;border:1px solid var(--line);border-radius:7px;background:#fff;padding:2px;margin-right:4px;vertical-align:middle}
+  .mini img{max-width:100%;max-height:100%;object-fit:contain}
+
+  /* tags */
+  .tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+  .tag.direct{background:var(--good-soft);color:var(--good)}
+  .tag.ts{background:var(--warn-soft);color:var(--warn)}
+  .tag.shared{background:var(--brand-soft);color:var(--brand)}
+  .tag.next{background:#fde7f3;color:#be185d}
+  .tag.fast{background:#e0f7fa;color:#0e7490}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(24,38,60,.32);opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(470px,100vw);background:var(--bg);z-index:60;transform:translateX(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer-head{padding:18px 20px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .drawer-head h3{margin:0;font-size:18px}
+  .drawer-head small{color:var(--muted)}
+  .x-btn{border:0;background:var(--brand-soft);color:var(--brand);width:34px;height:34px;border-radius:10px;font-size:18px;font-weight:700}
+  .drawer-body{overflow:auto;padding:16px 18px 40px;display:flex;flex-direction:column;gap:14px}
+  .scard{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);animation:slideIn .35s ease both}
+  .scard h4{margin:0 0 6px;font-size:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .route-line{display:flex;align-items:center;gap:10px;margin:8px 0 4px}
+  .route-line .pt{font-size:12px;color:var(--muted)}
+  .route-line .pt b{display:block;color:var(--ink);font-size:13.5px}
+  .track{flex:1;height:6px;background:#e7eefb;border-radius:99px;position:relative}
+  .track i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#2563eb);width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .track em{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
+  .lines{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .ln{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:11px;padding:7px 10px}
+  .ln.dim{opacity:.45}
+  .ln .logo{width:58px;height:34px;flex:none;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;padding:2px;background:#fff}
+  .ln .logo img{max-width:100%;max-height:100%;object-fit:contain}
+  .ln .tx{font-size:12.2px;line-height:1.4}
+  .ln .tx b{font-size:13px}
+  .ln .tx .sub{color:var(--muted)}
+  .ln .tx .diff{color:#b45309;font-weight:600}
+
+  /* status */
+  details.status{margin-top:26px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px}
+  details.status summary{cursor:pointer;font-weight:700}
+  .cov{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;margin-top:12px;font-size:12.5px;align-items:center}
+  .cov .h{font-weight:700;color:var(--muted)}
+  .cov .st{border-radius:8px;padding:4px 8px;text-align:center;font-weight:600}
+  .st.live{background:var(--good-soft);color:var(--good)}
+  .st.file{background:var(--brand-soft);color:var(--brand)}
+  .st.blocked{background:#fee2e2;color:#b91c1c}
+  .st.unavailable{background:#eef1f6;color:#7c8aa0}
+  footer{color:var(--muted);text-align:center;font-size:12px;margin-top:26px}
+  .empty-state{text-align:center;color:var(--muted);padding:34px 10px}
+  @media (max-width:760px){
+    .wrap{padding:0 14px 50px}.hero-inner{padding:20px 14px 76px}.cell{min-height:78px}.vchip .nm{font-size:10px}.cov{grid-template-columns:110px repeat(3,1fr)}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<header>
-  <h1>🚢 Shanghai Sailing Schedule &mdash; Laem Chabang / Ho Chi Minh / Manzanillo</h1>
-  <p id="periodText"></p>
+<header class="hero">
+  <div class="hero-inner">
+    <h1>Sailing schedule from Shanghai <span class="arrow">&rarr;</span> Laem Chabang · Ho Chi Minh · Manzanillo</h1>
+    <p id="sub"></p>
+  </div>
+  <div class="ship" aria-hidden="true">
+    <svg viewBox="0 0 96 46" width="96" height="46"><path d="M6 28h84l-10 14H18z" fill="#1d4ed8"/><rect x="20" y="16" width="52" height="12" rx="2" fill="#fff" stroke="#c7d6f5"/><rect x="26" y="6" width="14" height="10" rx="1.5" fill="#f97316"/><rect x="42" y="6" width="14" height="10" rx="1.5" fill="#22c55e"/><rect x="58" y="6" width="14" height="10" rx="1.5" fill="#0ea5e9"/><rect x="76" y="18" width="9" height="10" fill="#e2e8f0"/><rect x="79" y="10" width="3" height="8" fill="#94a3b8"/></svg>
+  </div>
+  <div class="waves" aria-hidden="true">
+    <svg viewBox="0 0 1200 46" preserveAspectRatio="none"><path d="M0 24 Q 50 6 100 24 T 200 24 T 300 24 T 400 24 T 500 24 T 600 24 T 700 24 T 800 24 T 900 24 T 1000 24 T 1100 24 T 1200 24 V46 H0Z" fill="#bcd6fb" opacity=".65"/><path d="M0 32 Q 60 16 120 32 T 240 32 T 360 32 T 480 32 T 600 32 T 720 32 T 840 32 T 960 32 T 1080 32 T 1200 32 V46 H0Z" fill="#93bdf6" opacity=".7"/></svg>
+  </div>
 </header>
+
 <div class="wrap">
+  <div class="section-label">1 &nbsp;Choose a route</div>
+  <div class="routes" id="routes"></div>
 
-  <div class="status-note" id="statusNote"></div>
+  <div class="section-label">2 &nbsp;Choose carriers (click a logo to toggle · double-click to show only that carrier)</div>
+  <div class="carrier-bar" id="carriers"></div>
+  <div class="hint" id="carrierHint"></div>
 
-  <div class="routes" id="routeButtons"></div>
+  <div class="toolbar">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search vessel / voyage, e.g. XIN NAN SHA" autocomplete="off">
+    </div>
+    <div class="seg" id="routingSeg">
+      <button data-v="all" class="on">All</button><button data-v="Direct">Direct</button><button data-v="T/S">T/S</button>
+    </div>
+    <div class="bar-actions">
+      <button class="ghost" id="btnAll">Select all carriers</button>
+      <button class="ghost" id="btnCsv">Export CSV</button>
+    </div>
+  </div>
 
-  <div class="stats" id="statCards"></div>
+  <div class="stats" id="stats"></div>
+  <div class="highlights" id="highlights"></div>
 
-  <div class="carriers" id="carrierToggles"></div>
-
-  <div class="layout">
-    <div class="panel">
-      <div class="cal-head">
-        <h2 id="monthLabel"></h2>
-        <div class="cal-nav">
-          <button id="prevMonth">&larr; Prev</button>
-          <button id="nextMonth">Next &rarr;</button>
-        </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="seg" id="viewSeg">
+        <button data-v="calendar" class="on">Calendar</button><button data-v="timeline">Timeline</button><button data-v="table">Table</button>
       </div>
-      <div class="cal-grid" id="calGrid"></div>
+      <div class="month-tabs" id="monthTabs"></div>
+      <div class="nav" id="calNav">
+        <button id="prev" aria-label="Previous month">&lsaquo;</button>
+        <button id="today" class="txt">Today</button>
+        <button id="next" aria-label="Next month">&rsaquo;</button>
+      </div>
     </div>
-
-    <div class="panel">
-      <p class="detail-title" id="detailTitle">เลือกวันที่เพื่อดูรายละเอียดเรือ</p>
-      <div id="detailBody"><p class="empty-hint">คลิกที่ช่องวันที่ในปฏิทินซึ่งมีเรือ เพื่อดูรายละเอียด</p></div>
-    </div>
+    <div id="viewBody"></div>
   </div>
 
-  <div class="list-wrap">
-    <h2>รายการเรือทั้งหมด (ตามเส้นทาง/สายเรือที่เลือก)</h2>
-    <div class="table-scroll">
-      <table class="list-table">
-        <thead>
-          <tr><th>ETD</th><th>เรือ</th><th>ETA</th><th>Transit</th><th>Routing</th><th>สายเรือ</th></tr>
-        </thead>
-        <tbody id="listBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <footer>สร้างโดยรวมข้อมูลจากสคริปต์ Python ในโฟลเดอร์ SHATH / SHASGN / SHAZLO &middot; อัปเดตล่าสุด: <span id="genTime"></span></footer>
+  <details class="status">
+    <summary>Data source for each carrier</summary>
+    <div class="cov" id="cov"></div>
+  </details>
+  <footer id="foot"></footer>
 </div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head"><div><h3 id="dTitle"></h3><small id="dSub"></small></div><button class="x-btn" id="dClose" aria-label="Close">&times;</button></div>
+  <div class="drawer-body" id="dBody"></div>
+</aside>
 
 <script id="app-data" type="application/json">__DATA_JSON__</script>
 <script>
 const DATA = JSON.parse(document.getElementById('app-data').textContent);
+const C = DATA.carriers;
+DATA.sailings.forEach(s => { s.transit_days = (s.transit_days === null || s.transit_days === '' || isNaN(Number(s.transit_days))) ? null : Number(s.transit_days); });
+const TH_MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TH_MON_S = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const TH_DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return ymd(d); };
+const diffDays = (a,b) => Math.round((parse(b)-parse(a))/86400000);
+const TODAY = ymd(new Date());
+const fmtShort = s => { if(!s) return '-'; const d = parse(s); return `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MON_S[d.getMonth()]}`; };
+const fmtLong = s => { const d = parse(s); return `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()]} ${d.getDate()} ${TH_MONTH[d.getMonth()]} ${d.getFullYear()}`; };
 
+const routeHasCarrier = (rc, code) => DATA.sailings.some(s => s.route_code===rc && s.lines.some(l => l.carrier===code));
+const allCodes = Object.keys(C);
 const state = {
   route: DATA.routes[0].code,
-  activeCarriers: new Set(Object.keys(DATA.carriers)),
-  monthIndex: 0, // 0=Sep,1=Oct,2=Nov relative to period.start month
-  selectedDate: null,
+  active: new Set(allCodes.filter(c => DATA.sailings.some(s => s.lines.some(l => l.carrier===c)))),
+  routing: 'all', q: '', view: 'calendar', month: null, sel: null,
+  sort: {k:'etd', dir:1},
 };
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-function fmtDate(s){ return s || "-"; }
-
-function carrierLogoHtml(code, size){
-  const c = DATA.carriers[code];
-  if(!c) return `<div class="logo-box" style="background:#888"><span class="badge-text">${code}</span></div>`;
-  if(c.logo){
-    return `<div class="logo-box" style="width:${size}px;height:${size}px;"><img src="assets/${c.logo}" alt="${code}"></div>`;
+/* ---------- derived data ---------- */
+function logoHtml(code, cls){
+  const c = C[code]; if(!c) return '';
+  return c.logo ? `<img src="assets/${c.logo}" alt="${esc(c.label)}" loading="lazy">`
+                : `<span style="font-weight:800;color:${c.color}">${esc(code)}</span>`;
+}
+function visibleLines(s){ return s.lines.filter(l => state.active.has(l.carrier)); }
+function passes(s){
+  if(s.route_code !== state.route) return false;
+  if(!visibleLines(s).length) return false;
+  if(state.routing !== 'all' && s.routing !== state.routing) return false;
+  if(state.q){
+    const q = state.q.toLowerCase();
+    const hay = (s.vessel + ' ' + s.lines.map(l => l.voyage+' '+l.service).join(' ')).toLowerCase();
+    if(!hay.includes(q)) return false;
   }
-  return `<div class="logo-box" style="background:${c.color};width:${size}px;height:${size}px;"><span class="badge-text">${code}</span></div>`;
+  return true;
+}
+let cache = null;
+function filtered(){ return DATA.sailings.filter(passes); }
+function routeSailings(){ return DATA.sailings.filter(s => s.route_code===state.route); }
+function nSharedCarriers(s){ return new Set(visibleLines(s).map(l => l.carrier)).size; }
+
+function meta(list){
+  const direct = list.filter(s => s.routing==='Direct' && s.transit_days!=null);
+  const fastest = direct.length ? Math.min(...direct.map(s => s.transit_days)) : null;
+  const next = list.find(s => s.etd >= TODAY) || null;
+  return {fastest, next};
+}
+const monthsAll = (()=>{
+  const ds = DATA.sailings.map(s => s.etd).sort();
+  if(!ds.length) return [];
+  const a = parse(ds[0]), b = parse(ds[ds.length-1]);
+  const out = []; let cur = new Date(a.getFullYear(), a.getMonth(), 1);
+  while(cur <= b){ out.push(`${cur.getFullYear()}-${pad(cur.getMonth()+1)}`); cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1); }
+  return out;
+})();
+state.month = monthsAll.includes(TODAY.slice(0,7)) ? TODAY.slice(0,7) : monthsAll[0];
+
+/* ---------- small ui helpers ---------- */
+function countUp(el, to){
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = to;
+  if(from === to){ el.textContent = to; return; }
+  const t0 = performance.now(), dur = 650;
+  const step = t => { const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3); el.textContent = Math.round(from+(to-from)*e); if(p<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function stripe(lines){
+  const cs = [...new Set(lines.map(l => l.carrier))].slice(0,4);
+  return `<span class="stripe">${cs.map(c => `<i style="background:${C[c]?.color||'#888'}"></i>`).join('')}</span>`;
 }
 
-function buildRouteButtons(){
-  const el = document.getElementById('routeButtons');
-  el.innerHTML = DATA.routes.map(r =>
-    `<button class="route-btn ${r.code===state.route?'active':''}" data-code="${r.code}">🇨🇳→ ${r.short}</button>`
-  ).join('');
-  el.querySelectorAll('.route-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.route = btn.dataset.code;
-      state.selectedDate = null;
-      render();
-    });
+/* ---------- routes ---------- */
+function renderRoutes(){
+  const el = document.getElementById('routes');
+  el.innerHTML = DATA.routes.map(r => {
+    const list = DATA.sailings.filter(s => s.route_code===r.code);
+    const carriers = [...new Set(list.flatMap(s => s.lines.map(l => l.carrier)))];
+    const country = (r.name.split(',')[1]||'').trim();
+    return `<button class="route-card ${r.code===state.route?'active':''}" data-r="${r.code}">
+      <div class="from-to">Shanghai <span style="color:var(--brand)">&rarr;</span> ${esc(r.short)}</div>
+      <div class="meta">${esc(country)} · ${list.length} sailings · ${carriers.length} carriers</div>
+      <span class="count">${list.length}</span>
+      <div class="dots">${carriers.map(c => `<i title="${esc(C[c]?.label||c)}" style="background:${C[c]?.color||'#888'}"></i>`).join('')}</div>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.route-card').forEach(b => b.onclick = () => { state.route = b.dataset.r; state.sel = null; ensureMonth(); render(); });
+}
+function ensureMonth(){
+  const list = routeSailings(); if(!list.length) return;
+  const ms = [...new Set(list.map(s => s.etd.slice(0,7)))].sort();
+  if(!ms.includes(state.month)) state.month = ms.includes(TODAY.slice(0,7)) ? TODAY.slice(0,7) : ms[0];
+}
+
+/* ---------- carrier chips ---------- */
+function renderCarriers(){
+  const el = document.getElementById('carriers');
+  const list = routeSailings();
+  el.innerHTML = allCodes.map(code => {
+    const c = C[code];
+    const n = list.filter(s => s.lines.some(l => l.carrier===code)).length;
+    const has = n > 0, on = has && state.active.has(code);
+    return `<div class="chip ${on?'on':''} ${has?'':'disabled'}" data-c="${code}" style="--c:${c.color}" role="button" tabindex="${has?0:-1}" aria-pressed="${on}" title="${has?esc(c.label)+' - '+n+' sailings':esc(c.label)+' - no data for this route'}">
+      <div class="logo">${logoHtml(code)}</div>
+      <div><div class="name">${esc(c.label)}</div><div class="cnt">${has ? n+' sailings' : 'No data'}</div></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.chip:not(.disabled)').forEach(ch => {
+    const code = ch.dataset.c;
+    const toggle = () => { state.active.has(code) ? state.active.delete(code) : state.active.add(code); ch.classList.add('pop'); render(); };
+    ch.onclick = e => { if(e.detail>1) return; toggle(); };
+    ch.ondblclick = () => { state.active = new Set([code]); render(); };
+    ch.onkeydown = e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(); } };
   });
+  const missing = allCodes.filter(c => !list.some(s => s.lines.some(l => l.carrier===c))).map(c => C[c].label);
+  document.getElementById('carrierHint').textContent = missing.length ? `No data for this route yet: ${missing.join(', ')}` : '';
 }
 
-function currentRouteSailings(){
-  return DATA.sailings.filter(s => s.route_code === state.route);
-}
-
-function filteredSailings(){
-  return currentRouteSailings().filter(s => s.lines.some(l => state.activeCarriers.has(l.carrier)));
-}
-
-function buildStats(){
-  const rows = filteredSailings();
-  const uniqueVessels = new Set(rows.map(r=>r.vessel.toUpperCase())).size;
-  const directCount = rows.filter(r=>r.routing==='Direct').length;
-  const carrierSet = new Set();
-  rows.forEach(r=>r.lines.forEach(l=>carrierSet.add(l.carrier)));
-  const multiLine = rows.filter(r=>new Set(r.lines.map(l=>l.carrier)).size>1).length;
-
-  const cards = [
-    {num: rows.length, lbl:"เที่ยวเรือทั้งหมด (หลังรวมซ้ำ)"},
-    {num: uniqueVessels, lbl:"จำนวนเรือ (ลำ) ที่ไม่ซ้ำ"},
-    {num: directCount, lbl:"เที่ยวตรง (Direct)"},
-    {num: multiLine, lbl:"เที่ยวที่หลายสายเรือ Share กัน"},
-    {num: carrierSet.size, lbl:"จำนวนสายเรือที่มีข้อมูล"},
+/* ---------- stats ---------- */
+function renderStats(){
+  const list = filtered();
+  const m = meta(list);
+  const vessels = new Set(list.map(s => s.vessel.toUpperCase())).size;
+  const direct = list.filter(s => s.routing==='Direct').length;
+  const shared = list.filter(s => nSharedCarriers(s) > 1).length;
+  const items = [
+    ['Sailings (duplicates merged)', list.length, 'var(--brand-soft)'],
+    ['Unique vessels', vessels, '#e0f2fe'],
+    ['Direct sailings', direct, 'var(--good-soft)'],
+    ['Shared by 2+ carriers', shared, '#fde7f3'],
+    ['Fastest direct (days)', m.fastest ?? 0, '#e0f7fa'],
   ];
-  document.getElementById('statCards').innerHTML = cards.map(c=>
-    `<div class="stat-card"><div class="num">${c.num}</div><div class="lbl">${c.lbl}</div></div>`
-  ).join('');
+  const el = document.getElementById('stats');
+  if(!el.children.length) el.innerHTML = items.map(i => `<div class="stat" style="--tint:${i[2]}"><div class="num" data-v="0">0</div><div class="lbl">${i[0]}</div></div>`).join('');
+  [...el.children].forEach((c,i) => { countUp(c.querySelector('.num'), items[i][1]); });
+
+  const hl = document.getElementById('highlights');
+  const cards = [];
+  if(m.next){
+    const d = diffDays(TODAY, m.next.etd);
+    cards.push(`<div class="hl" data-date="${m.next.etd}"><div class="ico" style="background:#fde7f3;color:#be185d"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div><b>Next departure: ${esc(m.next.vessel)}</b><small>${fmtShort(m.next.etd)} · ${d===0?'departs today':'in '+d+' day'+(d===1?'':'s')} · ${esc([...new Set(visibleLines(m.next).map(l => C[l.carrier]?.label))].join(', '))}</small></div></div>`);
+  }
+  if(m.fastest!=null){
+    const f = list.find(s => s.routing==='Direct' && s.transit_days===m.fastest);
+    cards.push(`<div class="hl" data-date="${f.etd}"><div class="ico" style="background:#e0f7fa;color:#0e7490"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L4 14h7l-1 7 9-11h-7z"/></svg></div>
+      <div><b>Fastest direct, ${m.fastest} days: ${esc(f.vessel)}</b><small>Departs ${fmtShort(f.etd)} → arrives ${fmtShort(f.eta)}</small></div></div>`);
+  }
+  const sh = list.filter(s => nSharedCarriers(s) > 1).sort((a,b) => nSharedCarriers(b)-nSharedCarriers(a))[0];
+  if(sh){
+    cards.push(`<div class="hl" data-date="${sh.etd}"><div class="ico" style="background:var(--brand-soft);color:var(--brand)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.3c3 .1 5 2.2 5 5.7"/></svg></div>
+      <div><b>Most shared: ${esc(sh.vessel)}</b><small>${nSharedCarriers(sh)} carriers · departs ${fmtShort(sh.etd)}</small></div></div>`);
+  }
+  hl.innerHTML = cards.join('');
+  hl.querySelectorAll('.hl').forEach(h => h.onclick = () => openDay(h.dataset.date));
 }
 
-function buildCarrierToggles(){
-  const rows = currentRouteSailings();
-  const counts = {};
-  Object.keys(DATA.carriers).forEach(c=>counts[c]=0);
-  rows.forEach(r=>{
-    const seen = new Set();
-    r.lines.forEach(l=>{ if(!seen.has(l.carrier)){ counts[l.carrier]++; seen.add(l.carrier);} });
-  });
+/* ---------- views ---------- */
+function renderViewChrome(){
+  document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v===state.view));
+  const showMonth = state.view==='calendar';
+  document.getElementById('monthTabs').style.display = showMonth ? '' : 'none';
+  document.getElementById('calNav').style.display = showMonth ? '' : 'none';
+  const list = routeSailings();
+  const ms = [...new Set(list.map(s => s.etd.slice(0,7)))].sort();
+  document.getElementById('monthTabs').innerHTML = ms.map(m => { const [y,mm] = m.split('-'); return `<button data-m="${m}" class="${m===state.month?'on':''}">${TH_MONTH[+mm-1]} ${y}</button>`; }).join('');
+  document.querySelectorAll('#monthTabs button').forEach(b => b.onclick = () => { state.month = b.dataset.m; renderView(true); renderViewChrome(); });
+}
+function renderView(animate){
+  const body = document.getElementById('viewBody');
+  if(state.view==='calendar') body.innerHTML = weeklyHtml() + calendarHtml(animate);
+  else if(state.view==='timeline') body.innerHTML = timelineHtml();
+  else body.innerHTML = tableHtml();
+  bindView();
+}
 
-  const el = document.getElementById('carrierToggles');
-  el.innerHTML = Object.entries(DATA.carriers).map(([code,c])=>{
-    const has = counts[code] > 0;
-    const on = state.activeCarriers.has(code);
-    return `<div class="carrier-toggle ${on?'on':''} ${has?'':'disabled'}" data-code="${code}" style="--carrier-color:${c.color}">
-      ${carrierLogoHtml(code, 30)}
-      <div><div class="name">${c.label}</div><div class="count">${counts[code]} เที่ยว</div></div>
-    </div>`;
-  }).join('');
+function weeklyHtml(){
+  const list = filtered(); if(!list.length) return '';
+  const all = routeSailings().map(s => s.etd).sort();
+  let start = parse(all[0]); start.setDate(start.getDate() - ((start.getDay()+6)%7));
+  const end = parse(all[all.length-1]);
+  const weeks = []; for(let d = new Date(start); d <= end; d.setDate(d.getDate()+7)) weeks.push(ymd(d));
+  const data = weeks.map(w => { const e = addDays(w,6), by = {};
+    list.forEach(s => { if(s.etd>=w && s.etd<=e) visibleLines(s).forEach(l => by[l.carrier]=(by[l.carrier]||0)+1); });
+    return {w, e, by, tot:Object.values(by).reduce((a,b)=>a+b,0)}; });
+  const max = Math.max(1, ...data.map(d => d.tot));
+  const bars = data.map(d => {
+    const cur = TODAY>=d.w && TODAY<=d.e;
+    const segs = Object.entries(d.by).map(([c,n]) => `<div class="seg-b" style="height:${n/max*100}%;background:${C[c]?.color||'#888'}" title="${esc(C[c]?.label||c)}: ${n}"></div>`).join('');
+    return `<div class="wk ${cur?'cur':''}" data-w="${d.w}" title="${fmtShort(d.w)} - ${fmtShort(d.e)} : ${d.tot} sailings">${segs}</div>`; }).join('');
+  const labels = data.map(d => { const dd = parse(d.w); return `<span class="${TODAY>=d.w && TODAY<=d.e?'cur':''}">${dd.getDate()}/${dd.getMonth()+1}</span>`; }).join('');
+  return `<div class="wk-box"><div class="weekly-cap"><b>Weekly overview</b> · sailings per week, colored by carrier (label under each bar = Monday of that week) · click a bar to jump to its month</div><div class="weekly">${bars}</div><div class="wk-labels">${labels}</div></div>`;
+}
 
-  el.querySelectorAll('.carrier-toggle').forEach(t=>{
-    t.addEventListener('click', ()=>{
-      const code = t.dataset.code;
-      if(counts[code]===0) return;
-      if(state.activeCarriers.has(code)) state.activeCarriers.delete(code);
-      else state.activeCarriers.add(code);
-      render();
+function calendarHtml(animate){
+  const [y, m] = state.month.split('-').map(Number);
+  const list = filtered(), by = {};
+  list.forEach(s => (by[s.etd] = by[s.etd] || []).push(s));
+  const first = new Date(y, m-1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const q = state.q.toLowerCase();
+  let h = `<div class="cal ${animate?'slide':''}">` + TH_DOW.map((d,i) => `<div class="dow ${i===0||i===6?'we':''}">${d}</div>`).join('');
+  for(let i=0;i<first;i++) h += '<div class="cell empty"></div>';
+  for(let d=1; d<=days; d++){
+    const ds = `${y}-${pad(m)}-${pad(d)}`, items = by[ds] || [];
+    const cls = ['cell', items.length?'has':'', ds<TODAY?'past':'', ds===TODAY?'today':'', ds===state.sel?'sel':''].join(' ');
+    h += `<div class="${cls}" data-date="${ds}"><div class="d"><span>${d}</span>${items.length?`<span class="badge-n">${items.length}</span>`:''}</div>`;
+    items.slice(0,3).forEach(s => {
+      const vl = visibleLines(s), n = new Set(vl.map(l => l.carrier)).size;
+      h += `<div class="vchip ${q && s.vessel.toLowerCase().includes(q)?'match':''}" title="${esc(s.vessel)} · ${esc(vl.map(l => C[l.carrier]?.label).join(', '))}">${stripe(vl)}<span class="nm">${esc(s.vessel)}</span>${n>1?`<span class="x">x${n}</span>`:''}</div>`;
     });
-  });
-}
-
-function periodMonths(){
-  const start = new Date(DATA.period.start+"T00:00:00");
-  const end = new Date(DATA.period.end+"T00:00:00");
-  const months = [];
-  let cur = new Date(start.getFullYear(), start.getMonth(), 1);
-  while(cur <= end){
-    months.push({y:cur.getFullYear(), m:cur.getMonth()});
-    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+    if(items.length>3) h += `<div class="more">+${items.length-3} more</div>`;
+    h += '</div>';
   }
-  return months;
+  return h + '</div>';
 }
 
-function buildCalendar(){
-  const months = periodMonths();
-  if(state.monthIndex < 0) state.monthIndex = 0;
-  if(state.monthIndex > months.length-1) state.monthIndex = months.length-1;
-  const {y,m} = months[state.monthIndex];
-
-  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[m]} ${y}`;
-  document.getElementById('prevMonth').disabled = state.monthIndex===0;
-  document.getElementById('nextMonth').disabled = state.monthIndex===months.length-1;
-
-  const rows = filteredSailings();
-  const byDate = {};
-  rows.forEach(r=>{
-    (byDate[r.etd] = byDate[r.etd] || []).push(r);
-  });
-
-  const firstDow = new Date(y,m,1).getDay();
-  const daysInMonth = new Date(y,m+1,0).getDate();
-  const todayStr = new Date().toISOString().slice(0,10);
-
-  let html = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell empty"></div>`;
-  for(let d=1; d<=daysInMonth; d++){
-    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const entries = byDate[dateStr] || [];
-    const isToday = dateStr===todayStr;
-    const maxShow = 3;
-    let chips = entries.slice(0,maxShow).map(e=>
-      `<div class="cal-chip" data-date="${dateStr}" title="${e.vessel}">${e.vessel}</div>`
-    ).join('');
-    if(entries.length>maxShow) chips += `<div class="cal-more" data-date="${dateStr}">+${entries.length-maxShow} more</div>`;
-    html += `<div class="cal-cell ${isToday?'today':''}" data-date="${dateStr}">
-      <div class="cal-date">${d}</div>${chips}
-    </div>`;
-  }
-  const grid = document.getElementById('calGrid');
-  grid.innerHTML = html;
-  grid.querySelectorAll('[data-date]').forEach(el=>{
-    el.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      state.selectedDate = el.dataset.date;
-      renderDetail();
-    });
-  });
+function timelineHtml(){
+  const list = filtered();
+  if(!list.length) return '<div class="empty-state">No sailings match the current filters</div>';
+  const all = routeSailings().map(s => s.etd).sort();
+  const start = all[0], end = all[all.length-1], span = diffDays(start,end)+2, px = 15;
+  const carriers = allCodes.filter(c => state.active.has(c) && list.some(s => visibleLines(s).some(l => l.carrier===c)));
+  const width = span*px;
+  let axis = '', weeks = '';
+  for(let d=0; d<=span; d++){ const ds = addDays(start,d), dt = parse(ds);
+    if(dt.getDate()===1 || d===0) axis += `<div class="tl-month" style="left:${d*px}px">${TH_MONTH[dt.getMonth()]}</div>`;
+    if(dt.getDay()===1) weeks += `<div class="tl-week" style="left:${d*px}px"></div>`; }
+  const todayLeft = TODAY>=start && TODAY<=end ? diffDays(start,TODAY)*px : null;
+  let rows = carriers.map(c => {
+    const dots = list.flatMap(s => visibleLines(s).filter(l => l.carrier===c).slice(0,1).map(() => s)).map(s => {
+      const sh = nSharedCarriers(s)>1;
+      return `<div class="tl-dot ${sh?'sh':''}" data-date="${s.etd}" style="left:${diffDays(start,s.etd)*px+px/2}px;background:${C[c].color}" title="${esc(s.vessel)} · ${fmtShort(s.etd)}${sh?' · shared by '+nSharedCarriers(s)+' carriers':''}"></div>`; }).join('');
+    return `<div class="tl-row"><div class="tl-label"><div class="logo">${logoHtml(c)}</div><b style="font-size:12.5px">${esc(C[c].label)}</b></div><div class="tl-track" style="width:${width}px">${weeks}${dots}</div></div>`; }).join('');
+  return `<div class="weekly-cap">Each dot = 1 sailing (ringed dot = one vessel shared by several carriers) · click a dot for details</div>
+    <div class="tl-scroll"><div class="tl" style="width:${width+140}px"><div class="tl-axis" style="width:${width}px">${axis}</div>${todayLeft!=null?`<div class="tl-today" style="left:${140+todayLeft+px/2}px"></div>`:''}${rows}</div></div>`;
 }
 
-function lineRowHtml(l){
-  const c = DATA.carriers[l.carrier] || {label:l.carrier,color:'#888'};
-  return `<div class="line-row">
-    ${carrierLogoHtml(l.carrier, 22)}
-    <div class="line-info"><span class="cname">${c.label}</span><br>
-      <span class="vinfo">${l.voyage?('Voyage '+l.voyage):''}${l.service?(' &middot; '+l.service):''}${l.cutoff?(' &middot; Cut-off '+l.cutoff):''}</span>
-    </div>
-  </div>`;
+function tableHtml(){
+  const list = filtered().slice();
+  const k = state.sort.k, dir = state.sort.dir;
+  const val = { etd:s=>s.etd, vessel:s=>s.vessel, eta:s=>s.eta||'', transit:s=>s.transit_days??999, routing:s=>s.routing, lines:s=>nSharedCarriers(s) };
+  list.sort((a,b) => { const x = val[k](a), y = val[k](b); return (x>y?1:x<y?-1:0)*dir || a.etd.localeCompare(b.etd); });
+  const m = meta(list);
+  const th = (key, label) => `<th data-k="${key}">${label}${k===key?(dir>0?' ▲':' ▼'):''}</th>`;
+  if(!list.length) return '<div class="empty-state">No sailings match the current filters</div>';
+  return `<div class="tbl-wrap"><table><thead><tr>${th('etd','Departs (ETD)')}${th('vessel','Vessel')}${th('eta','Arrives (ETA)')}${th('transit','Transit')}${th('routing','Routing')}${th('lines','Carriers')}</tr></thead><tbody>${list.map(s => {
+    const vl = visibleLines(s), n = new Set(vl.map(l => l.carrier)).size;
+    return `<tr class="${s.etd<TODAY?'past':''}" data-date="${s.etd}"><td><b>${fmtShort(s.etd)}</b></td><td><b>${esc(s.vessel)}</b> ${s===m.next?'<span class="tag next">Next</span>':''}</td><td>${fmtShort(s.eta)}</td><td>${s.transit_days ?? '-'} days ${s.routing==='Direct'&&s.transit_days===m.fastest?'<span class="tag fast">Fastest</span>':''}</td><td><span class="tag ${s.routing==='Direct'?'direct':'ts'}">${s.routing}</span></td><td>${[...new Set(vl.map(l => l.carrier))].map(c => `<span class="mini" title="${esc(C[c]?.label||c)}">${logoHtml(c)}</span>`).join('')}${n>1?`<span class="tag shared">Shared x${n}</span>`:''}</td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
-function sailCardHtml(s){
-  const routingClass = s.routing==='Direct' ? 'direct' : 'ts';
-  return `<div class="sail-card">
-    <div class="vessel">${s.vessel}<span class="routing-tag ${routingClass}">${s.routing}</span></div>
-    <div class="route-line">Shanghai → ${s.pod}</div>
-    <div class="sail-meta">
-      <span>ETD <b>${fmtDate(s.etd)}</b></span>
-      <span>ETA <b>${fmtDate(s.eta)}</b></span>
-      <span>Transit <b>${s.transit_days ?? '-'}</b> วัน</span>
-    </div>
-    <div class="lines-list">${s.lines.map(lineRowHtml).join('')}</div>
-  </div>`;
+function bindView(){
+  const b = document.getElementById('viewBody');
+  b.querySelectorAll('.cell.has').forEach(c => c.onclick = () => openDay(c.dataset.date));
+  b.querySelectorAll('.tl-dot').forEach(c => c.onclick = () => openDay(c.dataset.date));
+  b.querySelectorAll('tbody tr').forEach(c => c.onclick = () => openDay(c.dataset.date));
+  b.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { const k = t.dataset.k; state.sort = {k, dir: state.sort.k===k ? -state.sort.dir : 1}; renderView(); });
+  b.querySelectorAll('.wk').forEach(w => w.onclick = () => { state.month = w.dataset.w.slice(0,7); const d = parse(w.dataset.w); if(!routeSailings().some(s => s.etd.startsWith(state.month))) return; renderViewChrome(); renderView(true); });
 }
 
-function renderDetail(){
-  const title = document.getElementById('detailTitle');
-  const body = document.getElementById('detailBody');
-  if(!state.selectedDate){
-    title.textContent = "เลือกวันที่เพื่อดูรายละเอียดเรือ";
-    body.innerHTML = '<p class="empty-hint">คลิกที่ช่องวันที่ในปฏิทินซึ่งมีเรือ เพื่อดูรายละเอียด</p>';
-    return;
-  }
-  const rows = filteredSailings().filter(s=>s.etd===state.selectedDate);
-  title.textContent = `เรือออกวันที่ ${state.selectedDate} (${rows.length} ลำ)`;
-  body.innerHTML = rows.length ? rows.map(sailCardHtml).join('') : '<p class="empty-hint">ไม่มีเรือในวันนี้ตามตัวกรองที่เลือก</p>';
+/* ---------- drawer ---------- */
+function sailCard(s, i){
+  const list = filtered(), m = meta(list), all = routeSailings();
+  const maxT = Math.max(...all.map(x => x.transit_days||0), 1);
+  const vlSet = new Set(visibleLines(s).map(l => l.carrier));
+  const n = vlSet.size;
+  const tags = [`<span class="tag ${s.routing==='Direct'?'direct':'ts'}">${s.routing}</span>`];
+  if(n>1) tags.push(`<span class="tag shared">Shared by ${n} carriers</span>`);
+  if(m.next && s===m.next) tags.push('<span class="tag next">Next departure</span>');
+  if(s.routing==='Direct' && s.transit_days===m.fastest) tags.push('<span class="tag fast">Fastest</span>');
+  const lines = s.lines.map(l => {
+    const c = C[l.carrier] || {label:l.carrier,color:'#888'};
+    const diff = (l.etd && l.etd!==s.etd) ? `<span class="diff">ETD ${fmtShort(l.etd)}</span> · ` : '';
+    return `<div class="ln ${vlSet.has(l.carrier)?'':'dim'}" style="--c:${c.color}"><div class="logo">${logoHtml(l.carrier)}</div><div class="tx"><b>${esc(c.label)}</b>${l.voyage?` · Voyage ${esc(l.voyage)}`:''}
+      <div class="sub">${diff}${l.service?'Service '+esc(l.service)+' · ':''}${l.cutoff?'Cut-off '+esc(l.cutoff)+' · ':''}${l.routing==='T/S'?'T/S':'Direct'}${l.note?'<br>'+esc(l.note):''}</div></div></div>`; }).join('');
+  const w = s.transit_days ? Math.max(8, s.transit_days/maxT*100) : 0;
+  return `<div class="scard" style="animation-delay:${i*70}ms"><h4>${esc(s.vessel)} ${tags.join(' ')}</h4>
+    <div class="route-line"><div class="pt">Departs Shanghai<b>${fmtShort(s.etd)}</b></div>
+      <div class="track"><em>${s.transit_days ?? '-'} days</em><i data-w="${w}"></i></div>
+      <div class="pt" style="text-align:right">Arrives ${esc(s.pod)}<b>${fmtShort(s.eta)}</b></div></div>
+    <div class="lines">${lines}</div></div>`;
+}
+function openDay(ds){
+  state.sel = ds;
+  const rows = filtered().filter(s => s.etd===ds);
+  document.getElementById('dTitle').textContent = fmtLong(ds);
+  document.getElementById('dSub').textContent = `Shanghai → ${DATA.routes.find(r => r.code===state.route).short} · ${rows.length} sailing${rows.length===1?'':'s'}`;
+  document.getElementById('dBody').innerHTML = rows.length ? rows.map(sailCard).join('') : '<div class="empty-state">No departures on this day with the current filters</div>';
+  document.getElementById('drawer').classList.add('open'); document.getElementById('scrim').classList.add('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+  requestAnimationFrame(() => setTimeout(() => document.querySelectorAll('#dBody .track i').forEach(i => i.style.width = i.dataset.w+'%'), 120));
+  document.querySelectorAll('.cell').forEach(c => c.classList.toggle('sel', c.dataset.date===ds));
+}
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('scrim').classList.remove('open'); document.getElementById('drawer').setAttribute('aria-hidden','true'); }
+
+/* ---------- coverage / csv ---------- */
+function renderCoverage(){
+  const lab = {live:'Live', file:'From file', blocked:'Blocked', unavailable:'No data'};
+  let h = '<div class="h">Carrier</div>' + DATA.routes.map(r => `<div class="h" style="text-align:center">${esc(r.short)}</div>`).join('');
+  allCodes.forEach(c => { h += `<div style="display:flex;align-items:center;gap:8px"><span class="mini">${logoHtml(c)}</span><b>${esc(C[c].label)}</b></div>` +
+    DATA.routes.map(r => { const st = (DATA.carrier_status[c]||{})[r.code] || 'unavailable'; return `<div class="st ${st}">${lab[st]||st}</div>`; }).join(''); });
+  document.getElementById('cov').innerHTML = h;
+}
+function exportCsv(){
+  const rows = [['Route','Vessel','ETD','ETA','Transit(days)','Routing','Carriers','Voyages']];
+  filtered().forEach(s => { const vl = visibleLines(s); rows.push([s.route_name, s.vessel, s.etd, s.eta, s.transit_days ?? '', s.routing,
+    [...new Set(vl.map(l => C[l.carrier]?.label))].join('; '), vl.map(l => `${l.carrier}:${l.voyage}`).join('; ')]); });
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `schedule_${state.route}_${TODAY}.csv`; a.click(); URL.revokeObjectURL(a.href);
 }
 
-function renderList(){
-  const rows = filteredSailings().slice().sort((a,b)=>a.etd.localeCompare(b.etd));
-  const body = document.getElementById('listBody');
-  body.innerHTML = rows.map(s=>{
-    const logos = s.lines.map(l=>{
-      const c = DATA.carriers[l.carrier] || {label:l.carrier,color:'#888'};
-      const inner = c.logo ? `<img src="assets/${c.logo}" alt="${l.carrier}">` : `<span class="badge-text">${l.carrier}</span>`;
-      return `<span class="mini-logo" style="${c.logo?'':'background:'+c.color}" title="${c.label}${l.voyage?(' - Voy '+l.voyage):''}">${inner}</span>`;
-    }).join('');
-    const routingClass = s.routing==='Direct' ? 'direct' : 'ts';
-    return `<tr>
-      <td>${fmtDate(s.etd)}</td>
-      <td><b>${s.vessel}</b></td>
-      <td>${fmtDate(s.eta)}</td>
-      <td>${s.transit_days ?? '-'}</td>
-      <td><span class="routing-tag ${routingClass}">${s.routing}</span></td>
-      <td>${logos}</td>
-    </tr>`;
-  }).join('');
-}
-
-function buildStatusNote(){
-  const st = DATA.carrier_status || {};
-  const parts = [];
-  Object.entries(DATA.carriers).forEach(([code,c])=>{
-    const perRoute = st[code] || {};
-    const summary = DATA.routes.map(r=>{
-      const s = perRoute[r.code] || "unavailable";
-      const icon = s==='live' ? '✅ live' : s==='cached' ? '🗄️ cached' : s==='skipped' ? '⏭️ skipped' : '⚠️ no data';
-      return `${r.short}: ${icon}`;
-    }).join(', ');
-    parts.push(`<b>${c.label}</b> &mdash; ${summary}`);
-  });
-  document.getElementById('statusNote').innerHTML = "สถานะข้อมูลต่อสายเรือ: <br>" + parts.join(" <br>");
-}
-
-function render(){
-  buildRouteButtons();
-  buildCarrierToggles();
-  buildStats();
-  buildCalendar();
-  renderDetail();
-  renderList();
-}
-
-document.getElementById('prevMonth').addEventListener('click', ()=>{ state.monthIndex--; buildCalendar(); });
-document.getElementById('nextMonth').addEventListener('click', ()=>{ state.monthIndex++; buildCalendar(); });
-
-document.getElementById('periodText').textContent =
-  `Origin: Shanghai (CNSHA)  ·  ช่วงเวลา ${DATA.period.start} ถึง ${DATA.period.end}`;
-document.getElementById('genTime').textContent = DATA.generated_at;
-
-buildStatusNote();
-render();
+/* ---------- wiring ---------- */
+function render(){ renderRoutes(); renderCarriers(); renderStats(); renderViewChrome(); renderView(); }
+document.getElementById('viewSeg').onclick = e => { const b = e.target.closest('button'); if(!b) return; state.view = b.dataset.v; renderViewChrome(); renderView(true); };
+document.getElementById('routingSeg').onclick = e => { const b = e.target.closest('button'); if(!b) return; state.routing = b.dataset.v; document.querySelectorAll('#routingSeg button').forEach(x => x.classList.toggle('on', x===b)); renderStats(); renderViewChrome(); renderView(); };
+document.getElementById('q').oninput = e => { state.q = e.target.value.trim(); renderStats(); renderView(); };
+document.getElementById('btnAll').onclick = () => { state.active = new Set(allCodes.filter(c => routeHasCarrier(state.route,c))); render(); };
+document.getElementById('btnCsv').onclick = exportCsv;
+const stepMonth = n => { const ms = [...new Set(routeSailings().map(s => s.etd.slice(0,7)))].sort(); const i = ms.indexOf(state.month)+n; if(i>=0 && i<ms.length){ state.month = ms[i]; renderViewChrome(); renderView(true); } };
+document.getElementById('prev').onclick = () => stepMonth(-1);
+document.getElementById('next').onclick = () => stepMonth(1);
+document.getElementById('today').onclick = () => { const m = TODAY.slice(0,7); if(routeSailings().some(s => s.etd.startsWith(m))){ state.month = m; renderViewChrome(); renderView(true); } };
+document.getElementById('scrim').onclick = closeDrawer; document.getElementById('dClose').onclick = closeDrawer;
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') closeDrawer();
+  if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(state.view==='calendar' && e.key==='ArrowLeft') stepMonth(-1);
+  if(state.view==='calendar' && e.key==='ArrowRight') stepMonth(1);
+});
+document.getElementById('sub').textContent = `Origin: Shanghai (CNSHA) · Period ${DATA.period.start} to ${DATA.period.end} · A vessel sold by several carriers is merged into a single entry`;
+document.getElementById('foot').textContent = `Data last updated ${DATA.generated_at.replace('T',' ')} · Schedules are subject to change without notice`;
+ensureMonth(); renderCoverage(); render();
 </script>
 </body>
 </html>

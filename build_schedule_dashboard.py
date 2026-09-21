@@ -14,29 +14,24 @@ sailing, and renders an interactive HTML calendar/dashboard
 (dashboard/index.html) with a route selector and clickable carrier-logo
 filters.
 
-Carrier coverage in this build
--------------------------------
-  COSCO     - live: elines.coscoshipping.com public JSON API (fast, reliable)
-  Yang Ming - live: yangming.com public JSON API (fast, reliable)
-  ONE       - live: one-line.com point-to-point page, scraped with Playwright
-              (the site's own "Download" button flow is fragile because of a
-              cookie-consent overlay, so this reads the rendered result cards
-              directly instead - see fetch_one())
-  HMM       - best-effort live (Playwright); hmm21.com was unreachable from
-              this machine at the time this was written, so if the live
-              fetch fails this falls back to any previously-exported
-              HMM_*.xlsx already sitting in that route's folder
-  Maersk    - best-effort live (Playwright); maersk.com's schedule page is a
-              client-side app and the deep-link URL scheme the original
-              maersk_schedule_export.py scripts relied on no longer returns
-              results (it now renders the generic search landing page), so
-              this carrier is skipped with a warning unless a cached
-              maersk_*.xlsx is already present
+Carrier sources
+---------------
+  Live (fetched every run, cached in <route>/route_live_rows.json):
+    COSCO      elines.coscoshipping.com public JSON API
+    Yang Ming  yangming.com public JSON API
+    ONE        one-line.com point-to-point page, read with Playwright
+  Files dropped into each route folder (re-read on every run):
+    HMM        HMM*.xls (HTML table download) or HMM_*.xlsx
+    Maersk     Maersk*.csv (or maersk_*.xlsx)
+    OOCL       Oocl*.xlsx
+    MSC        MSC_*.xlsx   (msc.com blocks automated access, so no live fetch)
+    Hapag-Lloyd HapagLloyd_*.xlsx
+    ONE        ONE_Schedule_*.xlsx (routing inferred from transit time: > 11 days = T/S)
 
 Usage
 -----
     python build_schedule_dashboard.py                 # fetch + rebuild everything
-    python build_schedule_dashboard.py --use-cache      # reuse any *_raw.json / *.xlsx already on disk, skip live fetches
+    python build_schedule_dashboard.py --use-cache      # reuse the cached live COSCO/Yang Ming/ONE rows (files are always re-read)
     python build_schedule_dashboard.py --skip-one       # skip the (slower) ONE scrape
 """
 
@@ -80,6 +75,7 @@ ROUTES = [
         "yml_pod": "THLCB",
         "one_dest_code": "THLCH",
         "one_dest_name": "LAEM CHABANG, THAILAND",
+        "msc_port_id": 36,
         "hmm_dest": "LAEM CHABANG",
         "hmm_dest_code": "THLCH",
     },
@@ -93,6 +89,7 @@ ROUTES = [
         "yml_pod": "VNSGN",
         "one_dest_code": "VNSGN",
         "one_dest_name": "HO CHI MINH, VIETNAM",
+        "msc_port_id": 52,
         "hmm_dest": "HOCHIMINH",
         "hmm_dest_code": "VNSGN",
     },
@@ -106,17 +103,21 @@ ROUTES = [
         "yml_pod": "MXZLO",
         "one_dest_code": "MXZLO",
         "one_dest_name": "MANZANILLO, MEXICO",
+        "msc_port_id": 236,
         "hmm_dest": "MANZANILLO",
         "hmm_dest_code": "MXZLO",
     },
 ]
 
 CARRIERS = {
-    "COSCO": {"label": "COSCO Shipping", "color": "#1a3d8f", "logo": "cosco.png"},
-    "HMM": {"label": "HMM", "color": "#0a2a66", "logo": "hmm.webp"},
-    "ONE": {"label": "Ocean Network Express (ONE)", "color": "#e2007a", "logo": "one.webp"},
-    "YML": {"label": "Yang Ming", "color": "#0f7a3d", "logo": None},
-    "MAERSK": {"label": "Maersk", "color": "#42b0d5", "logo": "maersk.png"},
+    "COSCO": {"label": "COSCO Shipping", "color": "#1f4fa8", "logo": "cosco.png"},
+    "ONE": {"label": "ONE", "color": "#e2007a", "logo": "one.webp"},
+    "HMM": {"label": "HMM", "color": "#f28c00", "logo": "hmm.webp"},
+    "YML": {"label": "Yang Ming", "color": "#1a8a4a", "logo": "yangming.png"},
+    "MAERSK": {"label": "Maersk", "color": "#2aa3d6", "logo": "maersk.png"},
+    "OOCL": {"label": "OOCL", "color": "#e5352b", "logo": "oocl.png"},
+    "MSC": {"label": "MSC", "color": "#c9a227", "logo": "msc.jpg"},
+    "HAPAG": {"label": "Hapag-Lloyd", "color": "#f26b21", "logo": "hapag.png"},
 }
 
 ORIGIN_CITY_UUID = "738872886232873"
@@ -412,38 +413,352 @@ def fetch_hmm_from_cache(route: dict) -> list[dict]:
     return rows
 
 
-def fetch_maersk_from_cache(route: dict) -> list[dict]:
+def _glob_ci(folder: Path, patterns: list[str]) -> list[Path]:
+    """Case-insensitive glob (Windows-style file names like MaerskTH.csv / Ooclman.xlsx)."""
+    found: dict[str, Path] = {}
+    for p in folder.iterdir():
+        if not p.is_file() or p.name.startswith("~$"):
+            continue
+        for pat in patterns:
+            if re.fullmatch(pat.replace(".", r"\.").replace("*", ".*"), p.name, flags=re.I):
+                found[p.name.lower()] = p
+    return sorted(found.values())
+
+
+def _to_iso(value, dayfirst=True) -> str:
+    ts = pd.to_datetime(value, errors="coerce", dayfirst=dayfirst)
+    return "" if pd.isna(ts) else ts.date().isoformat()
+
+
+def _to_iso_dt(value, dayfirst=True) -> str:
+    ts = pd.to_datetime(value, errors="coerce", dayfirst=dayfirst)
+    return "" if pd.isna(ts) else ts.strftime("%Y-%m-%d %H:%M")
+
+
+def _transit_days(text) -> int | None:
+    if isinstance(text, (int, float)) and not pd.isna(text):
+        return int(text)
+    m = re.search(r"(\d+)\s*day", str(text), re.I)
+    if m:
+        return int(m.group(1))
+    return int(text) if str(text).strip().isdigit() else None
+
+
+def _read_csv_any(path: Path):
+    for enc in ("utf-8-sig", "cp874", "cp1252"):
+        try:
+            return pd.read_csv(path, encoding=enc)
+        except Exception:
+            continue
+    return None
+
+
+def load_maersk_files(route: dict) -> list[dict]:
+    """Maersk point-to-point results exported/copied from maersk.com (MaerskTH.csv, Maerskvn.csv,
+    MaerskMan.csv ... or the older maersk_*.xlsx layout)."""
     if pd is None:
         return []
-    candidates = sorted(route["folder"].glob("maersk_*.xlsx"))
-    if not candidates:
-        return []
-    path = candidates[0]
-    try:
-        df = pd.read_excel(path)
-    except Exception:
-        return []
-    rows = []
-    vv_col = "Vessel / Voyage" if "Vessel / Voyage" in df.columns else "Vessel"
-    for _, r in df.iterrows():
-        vv = str(r.get(vv_col, "")).strip()
-        vessel, voyage = _one_split_vessel_voyage(vv)
-        etd = str(r.get("Departure Date", "")).strip()
-        eta = str(r.get("Arrival Date", "")).strip()
-        if not vessel or not etd:
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["maersk*.csv", "maersk*.xlsx"])
+    for path in files:
+        df = _read_csv_any(path) if path.suffix.lower() == ".csv" else pd.read_excel(path)
+        if df is None or df.empty:
             continue
-        rows.append({
-            "carrier": "MAERSK", "vessel": vessel, "voyage": voyage,
-            "service": None, "pol": r.get("Departure Port") or "Shanghai",
-            "etd": etd, "pod": r.get("Arrival Port") or route["short"], "eta": eta,
-            "transit_days": None, "routing": "Direct", "cutoff": None,
-        })
-    print(f"    (Maersk) using cached export {path.name}: {len(rows)} sailings")
+        for _, r in df.iterrows():
+            if "Voyage Number" in df.columns:  # new CSV layout
+                vessel, voyage = str(r.get("Vessel", "")).strip(), str(r.get("Voyage Number", "")).strip()
+                etd_col, eta_col = "Departure Date", "Arrival Date"
+                cutoff = _to_iso_dt(r.get("Deadline CY"))
+                pol_text, pod_text = str(r.get("Departure", "")), str(r.get("Arrival", ""))
+            else:  # older maersk_schedule_export.py layout
+                vv = str(r.get("Vessel / Voyage", r.get("Vessel", ""))).strip()
+                vessel, voyage = _one_split_vessel_voyage(vv)
+                etd_col, eta_col = "Departure Date", "Arrival Date"
+                cutoff = ""
+                pol_text, pod_text = str(r.get("Departure Port", "")), str(r.get("Arrival Port", ""))
+            etd, eta = _to_iso(r.get(etd_col)), _to_iso(r.get(eta_col))
+            if not vessel or not etd:
+                continue
+            rows.append({
+                "carrier": "MAERSK", "vessel": vessel, "voyage": voyage, "service": None,
+                "pol": "Shanghai", "etd": etd, "pod": route["short"], "eta": eta,
+                "transit_days": _transit_days(r.get("Transit Time")), "routing": "Direct",
+                "cutoff": cutoff, "note": pol_text.split(" - ", 1)[-1] + " -> " + pod_text.split(" - ", 1)[-1],
+            })
+    if rows:
+        print(f"    (Maersk) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+_OOCL_DATE = re.compile(r"(\d{1,2})\s+([A-Za-z]{3})")
+
+
+def _oocl_date(text, year: int, not_before: dt.date | None = None) -> str:
+    m = _OOCL_DATE.search(str(text))
+    if not m:
+        return ""
+    try:
+        d = dt.datetime.strptime(f"{m.group(1)} {m.group(2)} {year}", "%d %b %Y").date()
+    except ValueError:
+        return ""
+    if not_before and d < not_before:
+        d = d.replace(year=year + 1)
+    return d.isoformat()
+
+
+def load_oocl_files(route: dict) -> list[dict]:
+    """OOCL 'Sailing Schedule' Excel export: every sailing is two rows (row 1 = CY cut-off / ETD /
+    service / vessel, row 2 = ETD date / ETA date / SI cut-off). The year is only in the header line."""
+    if pd is None:
+        return []
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["oocl*.xlsx"])
+    for path in files:
+        raw = pd.read_excel(path, header=None)
+        m = re.search(r"(\d{4})", str(raw.iat[0, 0]))
+        year = int(m.group(1)) if m else TODAY.year
+        hdr = next((i for i in range(len(raw)) if str(raw.iat[i, 0]).strip() == "Origin"), None)
+        if hdr is None:
+            continue
+        df = pd.read_excel(path, header=hdr)
+        recs = df.to_dict("records")
+        i = 0
+        while i < len(recs) - 1:
+            a, b = recs[i], recs[i + 1]
+            vv = str(a.get("Vessel Voyage", "")).strip()
+            if str(a.get("Origin", "")).strip().lower() != "shanghai" or not vv or vv == "nan":
+                i += 1
+                continue
+            etd_dt = _oocl_date(a.get("ETD at POL"), year)
+            etd_time = re.search(r"(\d{2}:\d{2})", str(a.get("ETD at POL")))
+            eta = _oocl_date(b.get("Destination"), year, not_before=dt.date.fromisoformat(etd_dt) if etd_dt else None)
+            vessel, voyage = _one_split_vessel_voyage(vv)
+            ts_port = a.get("Transshipment Port")
+            is_ts = isinstance(ts_port, str) and ts_port.strip() != ""
+            cut_txt = str(a.get("Cutoff", ""))
+            cut_time = re.search(r"(\d{2}:\d{2})", cut_txt)
+            cut_day = _oocl_date(cut_txt, year)
+            cut = f"{cut_day} {cut_time.group(1)}" if cut_day and cut_time else ""
+            rows.append({
+                "carrier": "OOCL", "vessel": vessel, "voyage": voyage,
+                "service": str(a.get("Service", "")).strip() or None, "pol": "Shanghai",
+                "etd": etd_dt, "pod": route["short"], "eta": eta,
+                "transit_days": _transit_days(a.get("Est. Transit Time")),
+                "routing": "T/S" if is_ts else "Direct", "cutoff": cut,
+                "note": f"T/S {ts_port}" if is_ts else "",
+            })
+            i += 2
+    rows = [r for r in rows if r["etd"]]
+    if rows:
+        print(f"    (OOCL) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+def load_hmm_html_files(route: dict) -> list[dict]:
+    """HMM 'Retrieve -> Excel' download: the .xls is really an HTML table (Origin Point, Loading Port
+    'SHANGHAI,CHINA ETD : 2026-09-22 09:00', Operator, Route, Vessel '[VTX]SM JAKARTA 2612W', ...)."""
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["hmm*.xls"])
+    from bs4 import BeautifulSoup
+    for path in files:
+        raw = path.read_bytes()
+        if raw[:4] == b"PK\x03\x04" or raw[:4] == b"\xd0\xcf\x11\xe0":
+            continue  # a genuine Excel file, handled elsewhere
+        soup = BeautifulSoup(raw.decode("utf-8-sig", errors="replace"), "html.parser")
+        table = soup.find("table")
+        if not table:
+            continue
+        heads = [th.get_text(" ", strip=True) for th in table.find_all("th")]
+        for tr in table.find_all("tr"):
+            tds = [td.get_text(" ", strip=True) for td in tr.find_all("td")]
+            if len(tds) != len(heads):
+                continue
+            rec = dict(zip(heads, tds))
+            m_etd = re.search(r"ETD\s*:\s*(\d{4}-\d{2}-\d{2})", rec.get("Loading Port", ""))
+            m_eta = re.search(r"ET[AB]\s*:\s*(\d{4}-\d{2}-\d{2})", rec.get("DischargingPort", ""))
+            legs = re.findall(r"\[(\w+)\]\s*([^\[]+)", rec.get("Vessel", ""))
+            if not m_etd or not legs:
+                continue
+            vessel, voyage = _one_split_vessel_voyage(legs[0][1].strip())
+            ts_port = rec.get("Next Port(T/S)", "").strip()
+            note = ""
+            if len(legs) > 1:
+                note = "Connecting vessel(s): " + " > ".join(f"{v.strip()}" for _, v in legs[1:])
+                if ts_port:
+                    note = f"T/S {ts_port} · " + note
+            op, svc = rec.get("Operator", "").strip(), rec.get("Route", "").strip()
+            days = rec.get("Total TransitTime(Days)", "").strip()
+            rows.append({
+                "carrier": "HMM", "vessel": vessel, "voyage": voyage,
+                "service": f"{svc} ({op})" if op and svc else (svc or op or None),
+                "pol": "Shanghai", "etd": m_etd.group(1), "pod": route["short"],
+                "eta": m_eta.group(1) if m_eta else "",
+                "transit_days": int(days) if days.isdigit() else None,
+                "routing": "T/S" if ts_port or len(legs) > 1 else "Direct",
+                "cutoff": _to_iso_dt(rec.get("Cargo Cut-off"), dayfirst=False), "note": note,
+            })
+    if rows:
+        print(f"    (HMM) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+def _read_table_after_marker(path: Path, marker: str):
+    """Read an Excel sheet whose real header row starts with `marker` (title/notes rows above it)."""
+    raw = pd.read_excel(path, header=None)
+    hdr = next((i for i in range(len(raw)) if str(raw.iat[i, 0]).strip() == marker), None)
+    if hdr is None:
+        return None
+    df = pd.read_excel(path, header=hdr)
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
+
+
+def _col(df, prefix: str):
+    return next((c for c in df.columns if c.lower().startswith(prefix.lower())), None)
+
+
+def _txt(v) -> str:
+    return "" if v is None or (isinstance(v, float) and pd.isna(v)) or str(v).strip().lower() in ("nan", "nat") else str(v).strip()
+
+
+def load_hapag_files(route: dict) -> list[dict]:
+    """Hapag-Lloyd schedule exported from hapag-lloyd.com (HapagLloyd_*.xlsx). Every sailing goes
+    via a transshipment hub (column 'Via'), so all rows are T/S."""
+    if pd is None:
+        return []
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["hapag*.xlsx"])
+    for path in files:
+        df = _read_table_after_marker(path, "No.")
+        if df is None:
+            continue
+        c_etd, c_eta, c_days = _col(df, "ETD"), _col(df, "ETA"), _col(df, "Transit")
+        c_via, c_cut = _col(df, "Via"), _col(df, "FCL Cut")
+        for _, r in df.iterrows():
+            etd, eta = _to_iso(r.get(c_etd), dayfirst=False), _to_iso(r.get(c_eta), dayfirst=False)
+            vessel = _txt(r.get("Vessel"))
+            if not etd or not vessel:
+                continue
+            via = _txt(r.get(c_via)) if c_via else ""
+            rows.append({
+                "carrier": "HAPAG", "vessel": vessel, "voyage": _txt(r.get("Voyage")),
+                "service": _txt(r.get("Service")) or None, "pol": "Shanghai", "etd": etd,
+                "pod": route["short"], "eta": eta, "transit_days": _transit_days(r.get(c_days)),
+                "routing": "T/S" if via else "Direct", "cutoff": _to_iso_dt(r.get(c_cut), dayfirst=False),
+                "note": f"T/S via {via}" if via else "",
+            })
+    if rows:
+        print(f"    (Hapag-Lloyd) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+def load_msc_files(route: dict) -> list[dict]:
+    """MSC 'Search a Schedule' results copied into MSC_*.xlsx (ETD, ETA, Vessel, Voyage, Transit, Routing)."""
+    if pd is None:
+        return []
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["msc*.xlsx"])
+    for path in files:
+        df = _read_table_after_marker(path, "No.")
+        if df is None:
+            continue
+        c_etd, c_eta, c_days = _col(df, "Departure"), _col(df, "Arrival"), _col(df, "Transit")
+        for _, r in df.iterrows():
+            etd, eta = _to_iso(r.get(c_etd), dayfirst=False), _to_iso(r.get(c_eta), dayfirst=False)
+            vessel, voyage = _txt(r.get("Vessel")), _txt(r.get("Voyage"))
+            if not etd or not vessel:
+                continue
+            note = ""
+            if vessel.upper() == "TBN":
+                vessel, note = f"TBN ({voyage})", "Vessel to be nominated"
+            rows.append({
+                "carrier": "MSC", "vessel": vessel, "voyage": voyage,
+                "service": _txt(r.get("Service")) or None, "pol": "Shanghai", "etd": etd,
+                "pod": route["short"], "eta": eta, "transit_days": _transit_days(r.get(c_days)),
+                "routing": "Direct" if _txt(r.get("Routing")).lower().startswith("direct") else "T/S",
+                "cutoff": "", "note": note,
+            })
+    if rows:
+        print(f"    (MSC) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+def load_one_files(route: dict) -> list[dict]:
+    """ONE point-to-point export (ONE_Schedule_*.xlsx: ETD Shanghai, Vessel / Voyage, Service Lane,
+    ETA Cai Mep, ETA Ho Chi Minh (Cat Lai), cut-offs). The file has no Direct/T-S column, so routing is
+    inferred from transit time (> 11 days = transshipment) and flagged in the line note."""
+    if pd is None:
+        return []
+    rows: list[dict] = []
+    files = _glob_ci(route["folder"], ["one_schedule*.xlsx"])
+    for path in files:
+        df = _read_table_after_marker(path, "ETD Shanghai")
+        if df is None:
+            continue
+        eta_cols = [c for c in df.columns if c.startswith("ETA ")]
+        day_cols = [c for c in df.columns if c.lower().startswith("transit ")]
+        # prefer the column for the actual destination (e.g. Cat Lai) over the nearby port (Cai Mep)
+        eta_cols.sort(key=lambda c: 0 if "Cat Lai" in c or route["short"].lower() in c.lower() else 1)
+        for _, r in df.iterrows():
+            etd = _to_iso(r.get("ETD Shanghai"), dayfirst=False)
+            vv = _txt(r.get("Vessel / Voyage"))
+            if not etd or not vv:
+                continue
+            eta, days, used = "", None, ""
+            for ec in eta_cols:
+                iso = _to_iso(r.get(ec), dayfirst=False)
+                if iso:
+                    eta, used = iso, ec
+                    days = (dt.date.fromisoformat(eta) - dt.date.fromisoformat(etd)).days
+                    break
+            if not eta:
+                continue
+            vessel, voyage = _one_split_vessel_voyage(vv)
+            is_ts = days > 11
+            note = "Routing inferred from transit time" + (f" · ETA at {used[4:]}" if "Cat Lai" not in used else "")
+            rows.append({
+                "carrier": "ONE", "vessel": vessel, "voyage": voyage,
+                "service": _txt(r.get("Service Lane")) or None, "pol": "Shanghai", "etd": etd,
+                "pod": route["short"], "eta": eta, "transit_days": days,
+                "routing": "T/S" if is_ts else "Direct",
+                "cutoff": _to_iso_dt(r.get("Port Cut-off"), dayfirst=False), "note": note,
+            })
+    if rows:
+        print(f"    (ONE) {len(rows)} sailings from {', '.join(p.name for p in files)}")
+    return rows
+
+
+def fetch_msc(route: dict, start: dt.date, end: dt.date) -> list[dict]:
+    """MSC public search API (see msc_schedule_*.py). msc.com currently answers 403 / Access Denied
+    to automated clients from most networks, in which case this raises and the carrier is marked blocked."""
+    base = "https://www.msc.com"
+    s = requests.Session()
+    s.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*", "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest", "Origin": base, "Referer": f"{base}/en/search-a-schedule",
+    })
+    s.get(f"{base}/en/search-a-schedule", timeout=20)
+    payload = {"FromDate": max(start, TODAY).isoformat(), "fromPortId": 444, "toPortId": route["msc_port_id"],
+               "language": "en", "dataSourceId": "{E9CCBD25-6FBA-4C5C-85F6-FC4F9E5A931F}"}
+    r = s.post(f"{base}/api/feature/tools/SearchSailingRoutes", json=payload, timeout=30)
+    r.raise_for_status()
+    rows = []
+    for group in (r.json().get("Data") or []):
+        for rt in group.get("Routes", []):
+            rows.append({
+                "carrier": "MSC", "vessel": rt.get("VesselName"), "voyage": rt.get("DepartureVoyageNo"),
+                "service": group.get("LoadingService"), "pol": "Shanghai", "pod": route["short"],
+                "etd": (rt.get("EstimatedDepartureDate") or "")[:10], "eta": (rt.get("EstimatedArrivalDate") or "")[:10],
+                "transit_days": rt.get("TotalTransitTime"),
+                "routing": "Direct" if str(group.get("RoutingType", "")).lower().startswith("direct") else "T/S",
+                "cutoff": (rt.get("CutOffs") or {}).get("ContainerYardCutOffDate"),
+            })
     return rows
 
 
 # ---------------------------------------------------------------------------
-# Normalisation + merge (collapse the same physical vessel/date across lines)
+# Normalisation + merge (collapse the same physical vessel call across lines)
 # ---------------------------------------------------------------------------
 def normalize_vessel(name: str) -> str:
     name = (name or "").upper().strip()
@@ -452,43 +767,62 @@ def normalize_vessel(name: str) -> str:
     return name
 
 
-def merge_route_rows(route_code: str, route_name: str, rows: list[dict]) -> list[dict]:
-    groups: dict[tuple, dict] = {}
-    order: list[tuple] = []
-    for r in rows:
-        if not r.get("vessel") or not r.get("etd"):
-            continue
-        key = (normalize_vessel(r["vessel"]), r["etd"])
-        if key not in groups:
-            groups[key] = {
-                "route_code": route_code,
-                "route_name": route_name,
-                "vessel": r["vessel"].strip(),
-                "etd": r["etd"],
-                "eta": r.get("eta") or "",
-                "transit_days": r.get("transit_days"),
-                "routing": r.get("routing") or "Direct",
-                "pol": r.get("pol") or "Shanghai",
-                "pod": r.get("pod") or route_name,
-                "lines": [],
-            }
-            order.append(key)
-        g = groups[key]
-        g["lines"].append({
-            "carrier": r["carrier"],
-            "voyage": r.get("voyage") or "",
-            "service": r.get("service") or "",
-            "cutoff": r.get("cutoff") or "",
-        })
-        if not g["eta"] and r.get("eta"):
-            g["eta"] = r["eta"]
-        if g.get("transit_days") in (None, "") and r.get("transit_days") not in (None, ""):
-            g["transit_days"] = r["transit_days"]
-        if r.get("routing") == "Direct":
-            g["routing"] = "Direct"
+MERGE_WINDOW_DAYS = 2  # carriers publish ETD in different time zones / berth windows
 
-    merged = [groups[k] for k in order]
-    merged.sort(key=lambda g: g["etd"])
+
+def merge_route_rows(route_code: str, route_name: str, rows: list[dict]) -> list[dict]:
+    """One calendar entry per physical vessel call: same vessel name and ETD within +/-2 days.
+    Every carrier selling that call is listed in `lines` (one line per carrier+voyage)."""
+    def _iso(v):
+        m = re.match(r"\s*(\d{4})[-/](\d{1,2})[-/](\d{1,2})", str(v or ""))
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else ""
+
+    rows = [{**r, "etd": _iso(r.get("etd")), "eta": _iso(r.get("eta"))} for r in rows]
+    by_vessel: dict[str, list[dict]] = {}
+    for r in sorted((x for x in rows if x.get("vessel") and x.get("etd")), key=lambda x: x["etd"]):
+        by_vessel.setdefault(normalize_vessel(r["vessel"]), []).append(r)
+
+    merged: list[dict] = []
+    for vessel_key, vrows in by_vessel.items():
+        clusters: list[list[dict]] = []
+        for r in vrows:
+            d = dt.date.fromisoformat(r["etd"])
+            if clusters and (d - dt.date.fromisoformat(clusters[-1][0]["etd"])).days <= MERGE_WINDOW_DAYS:
+                clusters[-1].append(r)
+            else:
+                clusters.append([r])
+        for cl in clusters:
+            etds = [c["etd"] for c in cl]
+            etd = max(set(etds), key=lambda e: (etds.count(e), -dt.date.fromisoformat(e).toordinal()))
+            lines, seen = [], set()
+            for c in cl:
+                k = (c["carrier"], (c.get("voyage") or "").strip(), c.get("routing"))
+                if k in seen:
+                    continue
+                seen.add(k)
+                lines.append({
+                    "carrier": c["carrier"], "voyage": c.get("voyage") or "", "service": c.get("service") or "",
+                    "cutoff": c.get("cutoff") or "", "etd": c["etd"], "eta": c.get("eta") or "",
+                    "routing": c.get("routing") or "Direct", "note": c.get("note") or "",
+                    "transit_days": _transit_days(c.get("transit_days")) if c.get("transit_days") not in (None, "") else None,
+                })
+            direct = [c for c in cl if c.get("routing") == "Direct"]
+            pick = (direct or cl)[0]
+            eta = pick.get("eta") or next((c["eta"] for c in cl if c.get("eta")), "")
+            days = pick.get("transit_days")
+            try:
+                days = int(float(days))
+            except (TypeError, ValueError):
+                days = None
+            if days is None and eta:
+                days = (dt.date.fromisoformat(eta) - dt.date.fromisoformat(etd)).days
+            merged.append({
+                "route_code": route_code, "route_name": route_name,
+                "vessel": cl[0]["vessel"].strip(), "etd": etd, "eta": eta, "transit_days": days,
+                "routing": "Direct" if direct else "T/S", "pol": "Shanghai", "pod": route_name,
+                "lines": lines,
+            })
+    merged.sort(key=lambda g: (g["etd"], g["vessel"]))
     return merged
 
 
@@ -516,70 +850,61 @@ def main():
 
     for route in ROUTES:
         print(f"\n=== {route['code']} : Shanghai -> {route['name']} ===")
-        route_rows = []
-        raw_cache_path = route["folder"] / "route_raw_rows.json"
+        live_path = route["folder"] / "route_live_rows.json"
+        live_rows: list[dict] = []
+        status: dict[str, str] = {}
 
-        cached_raw = None
-        if args.use_cache and raw_cache_path.exists():
-            cached_raw = json.loads(raw_cache_path.read_text(encoding="utf-8"))
-
-        if cached_raw is not None:
-            route_rows = cached_raw
-            print(f"  (using cached route_raw_rows.json: {len(route_rows)} rows)")
+        if args.use_cache and live_path.exists():
+            cached = json.loads(live_path.read_text(encoding="utf-8"))
+            live_rows, status = cached["rows"], cached["status"]
+            print(f"  (live carriers COSCO/Yang Ming/ONE from cache: {len(live_rows)} rows)")
         else:
-            # COSCO
-            try:
-                rows = fetch_cosco(route, start, end)
-                print(f"  COSCO:     {len(rows)} sailings")
-                route_rows.extend(rows)
-                carrier_status.setdefault("COSCO", {})[route["code"]] = "live"
-            except Exception as e:
-                print(f"  COSCO:     FAILED ({e})")
-                carrier_status.setdefault("COSCO", {})[route["code"]] = "unavailable"
-
-            # Yang Ming
-            try:
-                rows = fetch_yangming(route, start, end)
-                print(f"  Yang Ming: {len(rows)} sailings")
-                route_rows.extend(rows)
-                carrier_status.setdefault("YML", {})[route["code"]] = "live"
-            except Exception as e:
-                print(f"  Yang Ming: FAILED ({e})")
-                carrier_status.setdefault("YML", {})[route["code"]] = "unavailable"
-
-            # ONE
-            if not args.skip_one:
+            for code, label, fn in (("COSCO", "COSCO", fetch_cosco), ("YML", "Yang Ming", fetch_yangming),
+                                    ("ONE", "ONE", fetch_one)):
+                if code == "ONE" and args.skip_one:
+                    status[code] = "unavailable"
+                    continue
                 try:
-                    rows = fetch_one(route, start, end)
-                    print(f"  ONE:       {len(rows)} sailings")
-                    route_rows.extend(rows)
-                    carrier_status.setdefault("ONE", {})[route["code"]] = "live"
+                    rows = fn(route, start, end)
+                    print(f"  {label + ':':<11}{len(rows)} sailings (live)")
+                    live_rows.extend(rows)
+                    status[code] = "live" if rows else "unavailable"
                 except Exception as e:
-                    print(f"  ONE:       FAILED ({e})")
-                    carrier_status.setdefault("ONE", {})[route["code"]] = "unavailable"
+                    print(f"  {label + ':':<11}FAILED ({type(e).__name__}: {str(e)[:100]})")
+                    status[code] = "unavailable"
+            live_path.write_text(json.dumps({"rows": live_rows, "status": status}, ensure_ascii=False, indent=2),
+                                 encoding="utf-8")
+
+        route_rows = list(live_rows)
+
+        # Files copied/exported from the carriers' own sites (always re-read, so new uploads are picked up)
+        file_sources = {
+            "HMM": lambda: load_hmm_html_files(route) or fetch_hmm_from_cache(route),
+            "MAERSK": lambda: load_maersk_files(route),
+            "OOCL": lambda: load_oocl_files(route),
+            "MSC": lambda: load_msc_files(route),
+            "HAPAG": lambda: load_hapag_files(route),
+            "ONE": lambda: load_one_files(route),
+        }
+        for code, loader in file_sources.items():
+            rows = loader()
+            route_rows.extend(rows)
+            if rows:
+                status[code] = "file"
             else:
-                carrier_status.setdefault("ONE", {})[route["code"]] = "skipped"
+                status.setdefault(code, "unavailable")
 
-            # HMM: live attempt, else cache
-            hmm_rows = []
-            if not args.skip_hmm_live:
-                try:
-                    hmm_rows = fetch_hmm_live(route, start, end)
-                    print(f"  HMM:       {len(hmm_rows)} sailings (live)")
-                    carrier_status.setdefault("HMM", {})[route["code"]] = "live"
-                except Exception as e:
-                    print(f"  HMM:       live fetch failed ({type(e).__name__}: {str(e)[:120]})")
-            if not hmm_rows:
-                hmm_rows = fetch_hmm_from_cache(route)
-                carrier_status.setdefault("HMM", {})[route["code"]] = "cached" if hmm_rows else "unavailable"
-            route_rows.extend(hmm_rows)
+        if status.get("MSC") != "file":
+            try:
+                msc_rows = fetch_msc(route, start, end)
+                route_rows.extend(msc_rows)
+                status["MSC"] = "live" if msc_rows else "unavailable"
+            except Exception as e:
+                print(f"  MSC:       blocked/unavailable ({type(e).__name__})")
+                status["MSC"] = "blocked"
 
-            # Maersk: cache only (live deep-link automation is currently broken on maersk.com)
-            maersk_rows = fetch_maersk_from_cache(route)
-            carrier_status.setdefault("MAERSK", {})[route["code"]] = "cached" if maersk_rows else "unavailable"
-            route_rows.extend(maersk_rows)
-
-            raw_cache_path.write_text(json.dumps(route_rows, ensure_ascii=False, indent=2), encoding="utf-8")
+        for code, st in status.items():
+            carrier_status.setdefault(code, {})[route["code"]] = st
 
         merged = merge_route_rows(route["code"], route["short"], route_rows)
         print(f"  -> {len(route_rows)} raw sailings merged into {len(merged)} calendar entries")
@@ -603,6 +928,10 @@ def main():
         "maersk.png": BASE_DIR / "marsk.png",
         "hmm.webp": BASE_DIR / "HMM_Logo_Basic_Form.svg.webp",
         "one.webp": BASE_DIR / "Ocean_Network_Express_logo.svg.webp",
+        "yangming.png": BASE_DIR / "yangming.png",
+        "oocl.png": BASE_DIR / "oocl-logo.png",
+        "msc.jpg": BASE_DIR / "msc.jpg",
+        "hapag.png": BASE_DIR / "hapag.png",
     }
     for dest_name, src in logo_srcs.items():
         if src.exists():
@@ -621,7 +950,7 @@ def render_html():
 
     template = template_path.read_text(encoding="utf-8")
     data_json = data_path.read_text(encoding="utf-8")
-    html = template.replace("__DATA_JSON__", data_json)
+    html = template.replace("__DATA_JSON__", data_json.replace("</", "<\\/"))
     out_path.write_text(html, encoding="utf-8")
     print(f"Rendered: {out_path}")
 
