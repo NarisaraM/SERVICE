@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T11:59:29",
+  "generated_at": "2026-09-21T12:36:33",
   "period": {
     "start": "2026-09-01",
     "end": "2026-11-30"
@@ -102,7 +102,7 @@
     "HAPAG": {
       "SHATH": "file",
       "SHASGN": "file",
-      "SHAZLO": "unavailable"
+      "SHAZLO": "file"
     }
   },
   "sailings": [
@@ -14496,52 +14496,6 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
-      "vessel": "ITAJAI EXPRESS",
-      "etd": "2026-09-23",
-      "eta": "2026-10-07",
-      "transit_days": 14,
-      "routing": "Direct",
-      "pol": "Shanghai",
-      "pod": "Manzanillo",
-      "lines": [
-        {
-          "carrier": "MSC",
-          "voyage": "2636E",
-          "service": "Inca",
-          "cutoff": "",
-          "etd": "2026-09-23",
-          "eta": "2026-10-07",
-          "routing": "Direct",
-          "note": "",
-          "transit_days": 14
-        },
-        {
-          "carrier": "ONE",
-          "voyage": "2636E",
-          "service": "AX1",
-          "cutoff": "2026-09-22 17:00",
-          "etd": "2026-09-24",
-          "eta": "2026-10-11",
-          "routing": "Direct",
-          "note": "",
-          "transit_days": 17
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "2636E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-09-22 01:00",
-          "etd": "2026-09-25",
-          "eta": "2026-10-11",
-          "routing": "Direct",
-          "note": "",
-          "transit_days": 15
-        }
-      ]
-    },
-    {
-      "route_code": "SHAZLO",
-      "route_name": "Manzanillo",
       "vessel": "KOTA CEPAT",
       "etd": "2026-09-23",
       "eta": "2026-10-21",
@@ -14625,6 +14579,63 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
+      "vessel": "ITAJAI EXPRESS",
+      "etd": "2026-09-24",
+      "eta": "2026-10-07",
+      "transit_days": 14,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "MSC",
+          "voyage": "2636E",
+          "service": "Inca",
+          "cutoff": "",
+          "etd": "2026-09-23",
+          "eta": "2026-10-07",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 14
+        },
+        {
+          "carrier": "ONE",
+          "voyage": "2636E",
+          "service": "AX1",
+          "cutoff": "2026-09-22 17:00",
+          "etd": "2026-09-24",
+          "eta": "2026-10-11",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 17
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2636E",
+          "service": "AN1",
+          "cutoff": "2026-09-22 00:00",
+          "etd": "2026-09-24",
+          "eta": "2026-10-11",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 17
+        },
+        {
+          "carrier": "HMM",
+          "voyage": "2636E",
+          "service": "NW1 (HLC)",
+          "cutoff": "2026-09-22 01:00",
+          "etd": "2026-09-25",
+          "eta": "2026-10-11",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 15
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
       "vessel": "YANTIAN I",
       "etd": "2026-09-24",
       "eta": "2026-10-20",
@@ -14697,12 +14708,23 @@
       "route_name": "Manzanillo",
       "vessel": "ONE SPARKLE",
       "etd": "2026-09-26",
-      "eta": "2026-10-18",
+      "eta": "2026-10-17",
       "transit_days": 22,
       "routing": "Direct",
       "pol": "Shanghai",
       "pod": "Manzanillo",
       "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2637E",
+          "service": "TPM",
+          "cutoff": "2026-09-24 00:00",
+          "etd": "2026-09-25",
+          "eta": "2026-10-17",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 22
+        },
         {
           "carrier": "ONE",
           "voyage": "2637E",
@@ -14724,17 +14746,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 22
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0101E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-09-23 22:00",
-          "etd": "2026-09-26",
-          "eta": "2026-10-21",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): BUENAVENTURA EXPRESS 2638E",
-          "transit_days": 25
         }
       ]
     },
@@ -14759,17 +14770,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 19
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0005E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-09-23 20:00",
-          "etd": "2026-09-26",
-          "eta": "2026-10-21",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): BUENAVENTURA EXPRESS 2638E",
-          "transit_days": 25
         }
       ]
     },
@@ -15032,17 +15032,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 26
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0120E",
-          "service": "NW4 (HMM)",
-          "cutoff": "2026-09-30 00:00",
-          "etd": "2026-10-02",
-          "eta": "2026-11-05",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): HMM IVY 0006E",
-          "transit_days": 33
         }
       ]
     },
@@ -15121,6 +15110,17 @@
           "voyage": "2638E",
           "service": "NW1 (HLC)",
           "cutoff": "2026-09-30 21:00",
+          "etd": "2026-10-03",
+          "eta": "2026-10-21",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 18
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2638E",
+          "service": "AN1",
+          "cutoff": "2026-10-01 00:00",
           "etd": "2026-10-03",
           "eta": "2026-10-21",
           "routing": "Direct",
@@ -15242,11 +15242,22 @@
       "vessel": "MSC CANDIDA",
       "etd": "2026-10-05",
       "eta": "2026-11-08",
-      "transit_days": 34,
+      "transit_days": 35,
       "routing": "Direct",
       "pol": "Shanghai",
       "pod": "Manzanillo",
       "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "FA640A",
+          "service": "AN2",
+          "cutoff": "2026-10-02 00:00",
+          "etd": "2026-10-04",
+          "eta": "2026-11-08",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 35
+        },
         {
           "carrier": "HMM",
           "voyage": "0011E",
@@ -15471,15 +15482,15 @@
           "transit_days": 24
         },
         {
-          "carrier": "HMM",
-          "voyage": "0101E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-09-30 22:00",
+          "carrier": "HAPAG",
+          "voyage": "2639E",
+          "service": "TPM",
+          "cutoff": "2026-10-05 00:00",
           "etd": "2026-10-07",
-          "eta": "2026-11-04",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): BUENOS AIRES EXPRESS 2640E",
-          "transit_days": 28
+          "eta": "2026-10-31",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 24
         }
       ]
     },
@@ -15504,17 +15515,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 29
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0006E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-09-30 17:00",
-          "etd": "2026-10-08",
-          "eta": "2026-11-04",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): BUENOS AIRES EXPRESS 2640E",
-          "transit_days": 26
         },
         {
           "carrier": "HMM",
@@ -15657,6 +15657,17 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 34
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2641E",
+          "service": "AN2",
+          "cutoff": "2026-10-09 00:00",
+          "etd": "2026-10-11",
+          "eta": "2026-11-15",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 35
         }
       ]
     },
@@ -15681,6 +15692,30 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 47
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
+      "vessel": "MSC PROCIDA",
+      "etd": "2026-10-12",
+      "eta": "2026-11-07",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "FZ641A",
+          "service": "TPM",
+          "cutoff": "2026-10-11 00:00",
+          "etd": "2026-10-12",
+          "eta": "2026-11-07",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
         }
       ]
     },
@@ -15812,6 +15847,17 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 19
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2640E",
+          "service": "AN1",
+          "cutoff": "2026-10-13 00:00",
+          "etd": "2026-10-15",
+          "eta": "2026-11-04",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 20
         }
       ]
     },
@@ -15991,6 +16037,17 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 34
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "FA642A",
+          "service": "AN2",
+          "cutoff": "2026-10-16 00:00",
+          "etd": "2026-10-18",
+          "eta": "2026-11-22",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 35
         }
       ]
     },
@@ -16056,6 +16113,30 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
+      "vessel": "RDO ACE",
+      "etd": "2026-10-19",
+      "eta": "2026-11-14",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2642E",
+          "service": "TPM",
+          "cutoff": "2026-10-18 00:00",
+          "etd": "2026-10-19",
+          "eta": "2026-11-14",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
       "vessel": "BUENOS AIRES EXPRESS",
       "etd": "2026-10-20",
       "eta": "2026-11-08",
@@ -16098,17 +16179,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 18
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0101E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-10-17 16:00",
-          "etd": "2026-10-20",
-          "eta": "2027-01-27",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): BUENOS AIRES EXPRESS 2653E",
-          "transit_days": 99
         }
       ]
     },
@@ -16314,17 +16384,6 @@
         {
           "carrier": "HMM",
           "voyage": "0119E",
-          "service": "NW1 (ONE)",
-          "cutoff": "2026-10-23 02:00",
-          "etd": "2026-10-25",
-          "eta": "2026-11-23",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): ONE SINCERITY 2643E",
-          "transit_days": 29
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0119E",
           "service": "NW4 (HMM)",
           "cutoff": "2026-10-23 02:00",
           "etd": "2026-10-25",
@@ -16367,6 +16426,17 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 34
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2643E",
+          "service": "AN2",
+          "cutoff": "2026-10-23 00:00",
+          "etd": "2026-10-25",
+          "eta": "2026-11-29",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 35
         }
       ]
     },
@@ -16449,6 +16519,30 @@
           "eta": "2026-11-21",
           "routing": "T/S",
           "note": "T/S BUSAN, KOREA · Connecting vessel(s): RDO ACE 0101E",
+          "transit_days": 26
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
+      "vessel": "ONE ORINOCO",
+      "etd": "2026-10-26",
+      "eta": "2026-11-21",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2643E",
+          "service": "TPM",
+          "cutoff": "2026-10-25 00:00",
+          "etd": "2026-10-26",
+          "eta": "2026-11-21",
+          "routing": "Direct",
+          "note": "",
           "transit_days": 26
         }
       ]
@@ -16581,17 +16675,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 24
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0101E",
-          "service": "NW1 (ONE)",
-          "cutoff": "2026-10-26 02:00",
-          "etd": "2026-10-28",
-          "eta": "2026-11-23",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): ONE SINCERITY 2643E",
-          "transit_days": 26
         }
       ]
     },
@@ -16909,11 +16992,22 @@
       "vessel": "MSC ELENOIRE",
       "etd": "2026-11-02",
       "eta": "2026-12-06",
-      "transit_days": 34,
+      "transit_days": 35,
       "routing": "Direct",
       "pol": "Shanghai",
       "pod": "Manzanillo",
       "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "FA644A",
+          "service": "AN2",
+          "cutoff": "2026-10-30 00:00",
+          "etd": "2026-11-01",
+          "eta": "2026-12-06",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 35
+        },
         {
           "carrier": "HMM",
           "voyage": "0106E",
@@ -16965,19 +17059,19 @@
         {
           "carrier": "HMM",
           "voyage": "0101E",
-          "service": "NW1 (ONE)",
-          "cutoff": "2026-10-31 22:00",
-          "etd": "2026-11-02",
-          "eta": "2026-11-25",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): ONE SAPPHIRE 2644E",
-          "transit_days": 23
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0101E",
           "service": "NW3 (HLC)",
           "cutoff": "2026-10-31 22:00",
+          "etd": "2026-11-02",
+          "eta": "2026-11-28",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2644E",
+          "service": "TPM",
+          "cutoff": "2026-11-01 00:00",
           "etd": "2026-11-02",
           "eta": "2026-11-28",
           "routing": "Direct",
@@ -17072,6 +17166,30 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
+      "vessel": "ONE SINCERITY",
+      "etd": "2026-11-03",
+      "eta": "2026-11-17",
+      "transit_days": 14,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2643E",
+          "service": "AN1",
+          "cutoff": "2026-11-01 00:00",
+          "etd": "2026-11-03",
+          "eta": "2026-11-17",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 14
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
       "vessel": "YM WAYFINDER",
       "etd": "2026-11-03",
       "eta": "2026-11-23",
@@ -17149,17 +17267,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 29
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0100E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-11-02 02:00",
-          "etd": "2026-11-04",
-          "eta": "2026-12-02",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): MONTEVIDEO EXPRESS 2645E",
-          "transit_days": 28
         },
         {
           "carrier": "HMM",
@@ -17518,19 +17625,19 @@
         {
           "carrier": "HMM",
           "voyage": "0102E",
-          "service": "NW1 (HLC)",
-          "cutoff": "2026-11-07 22:00",
-          "etd": "2026-11-09",
-          "eta": "2026-12-02",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): MONTEVIDEO EXPRESS 2645E",
-          "transit_days": 23
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0102E",
           "service": "NW3 (HLC)",
           "cutoff": "2026-11-07 22:00",
+          "etd": "2026-11-09",
+          "eta": "2026-12-05",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2645E",
+          "service": "TPM",
+          "cutoff": "2026-11-08 00:00",
           "etd": "2026-11-09",
           "eta": "2026-12-05",
           "routing": "Direct",
@@ -17608,6 +17715,41 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 33
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "FA645A",
+          "service": "AN2",
+          "cutoff": "2026-11-08 00:00",
+          "etd": "2026-11-10",
+          "eta": "2026-12-13",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 33
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
+      "vessel": "ONE SAPPHIRE",
+      "etd": "2026-11-10",
+      "eta": "2026-11-21",
+      "transit_days": 11,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2644E",
+          "service": "AN1",
+          "cutoff": "2026-11-08 00:00",
+          "etd": "2026-11-10",
+          "eta": "2026-11-21",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 11
         }
       ]
     },
@@ -17715,17 +17857,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 28
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0027E",
-          "service": "NW4 (HMM)",
-          "cutoff": "2026-11-10 02:00",
-          "etd": "2026-11-12",
-          "eta": "2026-12-17",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): HYUNDAI COURAGE 0126E",
-          "transit_days": 35
         }
       ]
     },
@@ -17885,17 +18016,6 @@
         {
           "carrier": "HMM",
           "voyage": "0126E",
-          "service": "NW1 (ONE)",
-          "cutoff": "2026-11-13 02:00",
-          "etd": "2026-11-15",
-          "eta": "2026-12-09",
-          "routing": "T/S",
-          "note": "T/S BUSAN, KOREA · Connecting vessel(s): ONE SPHERE 2646E",
-          "transit_days": 24
-        },
-        {
-          "carrier": "HMM",
-          "voyage": "0126E",
           "service": "NW4 (HMM)",
           "cutoff": "2026-11-13 02:00",
           "etd": "2026-11-15",
@@ -17992,6 +18112,41 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
+      "vessel": "MONTEVIDEO EXPRESS",
+      "etd": "2026-11-16",
+      "eta": "2026-12-05",
+      "transit_days": 19,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2645E",
+          "service": "AN1",
+          "cutoff": "2026-11-14 00:00",
+          "etd": "2026-11-16",
+          "eta": "2026-12-05",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 19
+        },
+        {
+          "carrier": "ONE",
+          "voyage": "2645E",
+          "service": "AX1",
+          "cutoff": "2026-11-15 17:00",
+          "etd": "2026-11-17",
+          "eta": "2026-12-05",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 18
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
       "vessel": "ONE SPLENDOUR",
       "etd": "2026-11-16",
       "eta": "2026-12-20",
@@ -18040,6 +18195,30 @@
     {
       "route_code": "SHAZLO",
       "route_name": "Manzanillo",
+      "vessel": "YOKOHAMA EXPRESS",
+      "etd": "2026-11-16",
+      "eta": "2026-12-12",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2646E",
+          "service": "TPM",
+          "cutoff": "2026-11-15 00:00",
+          "etd": "2026-11-16",
+          "eta": "2026-12-12",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
       "vessel": "CMA CGM IGUACU",
       "etd": "2026-11-17",
       "eta": "2026-12-06",
@@ -18082,30 +18261,6 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 19
-        }
-      ]
-    },
-    {
-      "route_code": "SHAZLO",
-      "route_name": "Manzanillo",
-      "vessel": "MONTEVIDEO EXPRESS",
-      "etd": "2026-11-17",
-      "eta": "2026-12-05",
-      "transit_days": 18,
-      "routing": "Direct",
-      "pol": "Shanghai",
-      "pod": "Manzanillo",
-      "lines": [
-        {
-          "carrier": "ONE",
-          "voyage": "2645E",
-          "service": "AX1",
-          "cutoff": "2026-11-15 17:00",
-          "etd": "2026-11-17",
-          "eta": "2026-12-05",
-          "routing": "Direct",
-          "note": "",
-          "transit_days": 18
         }
       ]
     },
@@ -18237,6 +18392,17 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 18
+        },
+        {
+          "carrier": "HAPAG",
+          "voyage": "2646E",
+          "service": "AN1",
+          "cutoff": "2026-11-21 00:00",
+          "etd": "2026-11-23",
+          "eta": "2026-12-12",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 19
         }
       ]
     },
@@ -18357,6 +18523,30 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 34
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
+      "vessel": "POSORJA EXPRESS",
+      "etd": "2026-11-23",
+      "eta": "2026-12-19",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "2647E",
+          "service": "TPM",
+          "cutoff": "2026-11-22 00:00",
+          "etd": "2026-11-23",
+          "eta": "2026-12-19",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
         }
       ]
     },
@@ -18632,6 +18822,30 @@
           "routing": "Direct",
           "note": "",
           "transit_days": 34
+        }
+      ]
+    },
+    {
+      "route_code": "SHAZLO",
+      "route_name": "Manzanillo",
+      "vessel": "SEASPAN BRAVO",
+      "etd": "2026-11-30",
+      "eta": "2026-12-26",
+      "transit_days": 26,
+      "routing": "Direct",
+      "pol": "Shanghai",
+      "pod": "Manzanillo",
+      "lines": [
+        {
+          "carrier": "HAPAG",
+          "voyage": "0105E",
+          "service": "TPM",
+          "cutoff": "2026-11-29 00:00",
+          "etd": "2026-11-30",
+          "eta": "2026-12-26",
+          "routing": "Direct",
+          "note": "",
+          "transit_days": 26
         }
       ]
     },

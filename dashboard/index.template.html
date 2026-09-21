@@ -207,20 +207,10 @@
   .ln .tx .sub{color:var(--muted)}
   .ln .tx .diff{color:#b45309;font-weight:600}
 
-  /* status */
-  details.status{margin-top:26px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px}
-  details.status summary{cursor:pointer;font-weight:700}
-  .cov{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;margin-top:12px;font-size:12.5px;align-items:center}
-  .cov .h{font-weight:700;color:var(--muted)}
-  .cov .st{border-radius:8px;padding:4px 8px;text-align:center;font-weight:600}
-  .st.live{background:var(--good-soft);color:var(--good)}
-  .st.file{background:var(--brand-soft);color:var(--brand)}
-  .st.blocked{background:#fee2e2;color:#b91c1c}
-  .st.unavailable{background:#eef1f6;color:#7c8aa0}
   footer{color:var(--muted);text-align:center;font-size:12px;margin-top:26px}
   .empty-state{text-align:center;color:var(--muted);padding:34px 10px}
   @media (max-width:760px){
-    .wrap{padding:0 14px 50px}.hero-inner{padding:20px 14px 76px}.cell{min-height:78px}.vchip .nm{font-size:10px}.cov{grid-template-columns:110px repeat(3,1fr)}
+    .wrap{padding:0 14px 50px}.hero-inner{padding:20px 14px 76px}.cell{min-height:78px}.vchip .nm{font-size:10px}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -278,11 +268,6 @@
     </div>
     <div id="viewBody"></div>
   </div>
-
-  <details class="status">
-    <summary>Data source for each carrier</summary>
-    <div class="cov" id="cov"></div>
-  </details>
   <footer id="foot"></footer>
 </div>
 
@@ -594,14 +579,7 @@ function openDay(ds){
 }
 function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('scrim').classList.remove('open'); document.getElementById('drawer').setAttribute('aria-hidden','true'); }
 
-/* ---------- coverage / csv ---------- */
-function renderCoverage(){
-  const lab = {live:'Live', file:'From file', blocked:'Blocked', unavailable:'No data'};
-  let h = '<div class="h">Carrier</div>' + DATA.routes.map(r => `<div class="h" style="text-align:center">${esc(r.short)}</div>`).join('');
-  allCodes.forEach(c => { h += `<div style="display:flex;align-items:center;gap:8px"><span class="mini">${logoHtml(c)}</span><b>${esc(C[c].label)}</b></div>` +
-    DATA.routes.map(r => { const st = (DATA.carrier_status[c]||{})[r.code] || 'unavailable'; return `<div class="st ${st}">${lab[st]||st}</div>`; }).join(''); });
-  document.getElementById('cov').innerHTML = h;
-}
+/* ---------- csv ---------- */
 function exportCsv(){
   const rows = [['Route','Vessel','ETD','ETA','Transit(days)','Routing','Carriers','Voyages']];
   filtered().forEach(s => { const vl = visibleLines(s); rows.push([s.route_name, s.vessel, s.etd, s.eta, s.transit_days ?? '', s.routing,
@@ -631,7 +609,7 @@ document.addEventListener('keydown', e => {
 });
 document.getElementById('sub').textContent = `Origin: Shanghai (CNSHA) · Period ${DATA.period.start} to ${DATA.period.end} · A vessel sold by several carriers is merged into a single entry`;
 document.getElementById('foot').textContent = `Data last updated ${DATA.generated_at.replace('T',' ')} · Schedules are subject to change without notice`;
-ensureMonth(); renderCoverage(); render();
+ensureMonth(); render();
 </script>
 </body>
 </html>

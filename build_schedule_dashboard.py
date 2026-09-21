@@ -627,7 +627,7 @@ def load_hapag_files(route: dict) -> list[dict]:
     if pd is None:
         return []
     rows: list[dict] = []
-    files = _glob_ci(route["folder"], ["hapag*.xlsx"])
+    files = _glob_ci(route["folder"], ["hapag*.xlsx", "hapag*.xls"])
     for path in files:
         df = _read_table_after_marker(path, "No.")
         if df is None:
@@ -640,11 +640,13 @@ def load_hapag_files(route: dict) -> list[dict]:
             if not etd or not vessel:
                 continue
             via = _txt(r.get(c_via)) if c_via else ""
+            routing_txt = _txt(r.get("Routing")).lower() if "Routing" in df.columns else ""
+            is_ts = bool(via) or (bool(routing_txt) and not routing_txt.startswith("direct"))
             rows.append({
                 "carrier": "HAPAG", "vessel": vessel, "voyage": _txt(r.get("Voyage")),
                 "service": _txt(r.get("Service")) or None, "pol": "Shanghai", "etd": etd,
                 "pod": route["short"], "eta": eta, "transit_days": _transit_days(r.get(c_days)),
-                "routing": "T/S" if via else "Direct", "cutoff": _to_iso_dt(r.get(c_cut), dayfirst=False),
+                "routing": "T/S" if is_ts else "Direct", "cutoff": _to_iso_dt(r.get(c_cut), dayfirst=False),
                 "note": f"T/S via {via}" if via else "",
             })
     if rows:
@@ -794,18 +796,20 @@ def merge_route_rows(route_code: str, route_name: str, rows: list[dict]) -> list
         for cl in clusters:
             etds = [c["etd"] for c in cl]
             etd = max(set(etds), key=lambda e: (etds.count(e), -dt.date.fromisoformat(e).toordinal()))
-            lines, seen = [], set()
+            lines: list[dict] = []
             for c in cl:
-                k = (c["carrier"], (c.get("voyage") or "").strip(), c.get("routing"))
-                if k in seen:
-                    continue
-                seen.add(k)
-                lines.append({
+                line = {
                     "carrier": c["carrier"], "voyage": c.get("voyage") or "", "service": c.get("service") or "",
                     "cutoff": c.get("cutoff") or "", "etd": c["etd"], "eta": c.get("eta") or "",
                     "routing": c.get("routing") or "Direct", "note": c.get("note") or "",
                     "transit_days": _transit_days(c.get("transit_days")) if c.get("transit_days") not in (None, "") else None,
-                })
+                }
+                same = next((i for i, l in enumerate(lines)
+                             if l["carrier"] == line["carrier"] and l["voyage"].strip() == line["voyage"].strip()), None)
+                if same is None:
+                    lines.append(line)
+                elif lines[same]["routing"] != "Direct" and line["routing"] == "Direct":
+                    lines[same] = line  # keep the direct variant of the same carrier voyage
             direct = [c for c in cl if c.get("routing") == "Direct"]
             pick = (direct or cl)[0]
             eta = pick.get("eta") or next((c["eta"] for c in cl if c.get("eta")), "")
