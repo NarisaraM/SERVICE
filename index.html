@@ -2,11 +2,190 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=dashboard/">
-<link rel="canonical" href="dashboard/">
-<title>Shanghai Sailing Schedule</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sailing Schedule — Dashboard Hub</title>
+<meta name="description" content="Heung-A Line sailing schedule dashboards.">
+<style>
+  :root{
+    --bg:#eef1f6; --card:#ffffff; --ink:#101a33; --muted:#66748f; --line:#e4e9f2;
+    --navy:#0b2559; --navy2:#123a86; --accent:#c8942e; --accent2:#e0b23c;
+    --blue-soft:#e8f0ff; --shadow:0 1px 2px rgba(16,26,51,.04),0 10px 28px rgba(16,26,51,.07);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Inter,Tahoma,system-ui,sans-serif;font-size:14px;line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 60px;}
+
+  header{background:#fff;border-bottom:1px solid var(--line);}
+  .head-inner{max-width:1180px;margin:0 auto;padding:22px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand .badge{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0 8%,#fbe6d0 9% 100%);
+    border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--shadow);}
+  .brand .badge svg{width:30px;height:30px;}
+  .brand .word{line-height:1.15;}
+  .brand .word .top{font-weight:800;font-size:18px;color:var(--navy);letter-spacing:.4px;}
+  .brand .word .bot{font-size:10.5px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;}
+  .divider{width:1px;align-self:stretch;background:var(--line);margin:2px 0;}
+  .titleblock .h{font-weight:800;font-size:19px;color:var(--ink);letter-spacing:.3px;}
+  .titleblock .s{font-size:11.5px;color:var(--accent);font-weight:800;letter-spacing:1.6px;margin-top:2px;}
+  .head-right{margin-left:auto;text-align:right;color:var(--muted);font-size:12px;}
+  .head-right b{display:block;color:var(--ink);font-size:12.5px;}
+
+  .section{margin-top:34px;}
+  .section-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .bar{width:5px;height:22px;border-radius:3px;background:linear-gradient(180deg,var(--accent),var(--accent2));}
+  .section-head h2{margin:0;font-size:17px;font-weight:800;}
+  .section-head .count{font-size:11.5px;font-weight:700;color:var(--navy2);background:var(--blue-soft);
+    border-radius:999px;padding:3px 11px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+
+  .card{position:relative;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    overflow:hidden;display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s;}
+  .card:hover{transform:translateY(-4px);box-shadow:0 4px 8px rgba(16,26,51,.06),0 18px 36px rgba(16,26,51,.11);}
+  .card .topbar{height:5px;background:linear-gradient(90deg,var(--navy2),var(--accent2));}
+  .card .body{padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px;flex:1;}
+  .row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--navy2);
+    background:var(--blue-soft);border-radius:999px;padding:5px 11px;white-space:nowrap;}
+  .pill{font-size:11px;font-weight:800;color:#8a5a12;background:#fbeed2;border-radius:999px;padding:4px 11px;white-space:nowrap;}
+  .card h3{margin:0;font-size:19px;font-weight:800;letter-spacing:-.2px;}
+  .card p.desc{margin:0;color:var(--muted);font-size:12.8px;line-height:1.55;}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;border-top:1px dashed var(--line);
+    border-bottom:1px dashed var(--line);padding:14px 0;margin:2px 0;}
+  .stats .num{font-size:21px;font-weight:800;color:var(--navy);}
+  .stats .lbl{font-size:11px;color:var(--muted);margin-top:1px;}
+  .cta{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--navy);color:#fff;font-weight:700;font-size:13.5px;border-radius:12px;padding:12px 16px;
+    transition:background .15s,transform .15s;}
+  .card:hover .cta{background:var(--navy2);}
+  .cta svg{width:15px;height:15px;transition:transform .15s;}
+  .card:hover .cta svg{transform:translateX(3px);}
+  .routes-line{display:flex;flex-wrap:wrap;gap:6px;}
+  .routes-line span{font-size:10.8px;font-weight:700;color:var(--muted);background:#f3f5fa;border:1px solid var(--line);
+    border-radius:999px;padding:3px 9px;}
+
+  .add-card{border:2px dashed #cfd7e6;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;
+    min-height:270px;color:#9aa7bf;font-weight:700;font-size:13px;flex-direction:column;gap:10px;text-align:center;padding:20px;
+    transition:border-color .15s,color .15s,background .15s;}
+  .add-card:hover{border-color:var(--navy2);color:var(--navy2);background:#fff;}
+  .add-card .plus{width:40px;height:40px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;}
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);}
+  footer .fbrand{font-weight:700;color:var(--navy);}
+
+  @media(max-width:560px){
+    .head-right{width:100%;text-align:left;margin-left:0;}
+    .stats{grid-template-columns:1fr 1fr;}
+  }
+</style>
 </head>
 <body>
-<p>Redirecting to the <a href="dashboard/">Shanghai Sailing Schedule dashboard</a>&hellip;</p>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <div class="badge">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M8 30 L40 30 L35 40 L13 40 Z" fill="#0b2559"/>
+          <rect x="14" y="14" width="20" height="14" rx="2" fill="#fff" stroke="#c8942e" stroke-width="1.5"/>
+          <rect x="18" y="10" width="4" height="6" fill="#c8942e"/>
+          <rect x="26" y="10" width="4" height="6" fill="#0b2559"/>
+          <path d="M6 30 Q12 34 18 30 T30 30 T42 30" stroke="#c8942e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="word">
+        <div class="top">HEUNG-A LINE</div>
+        <div class="bot">Heung A Line Co., Ltd.</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="titleblock">
+      <div class="h">Sailing Schedule</div>
+      <div class="s">DASHBOARD HUB</div>
+    </div>
+    <div class="head-right">
+      <span>Last updated</span>
+      <b id="updated">22 Sep 2026</b>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="section">
+    <div class="section-head">
+      <div class="bar"></div>
+      <h2>Sailing Schedule Dashboards</h2>
+      <span class="count" id="countLabel">2 systems</span>
+    </div>
+
+    <div class="grid" id="grid">
+      <a class="card" href="https://narisaram.github.io/SERVICE/dashboard/" target="_blank" rel="noopener">
+        <div class="topbar"></div>
+        <div class="body">
+          <div class="row-top">
+            <span class="chip">⚓ Origin · Shanghai (CNSHA)</span>
+            <span class="pill">8 carriers</span>
+          </div>
+          <div>
+            <h3>Shanghai Sailing Schedule</h3>
+            <p class="desc">Merged vessel calendar, timeline and table for Shanghai outbound sailings — the same vessel sold by several carriers is combined into one entry.</p>
+          </div>
+          <div class="routes-line">
+            <span>Laem Chabang</span><span>Ho Chi Minh</span><span>Manzanillo</span>
+          </div>
+          <div class="stats">
+            <div><div class="num">721</div><div class="lbl">Sailings tracked</div></div>
+            <div><div class="num">3</div><div class="lbl">Destination routes</div></div>
+            <div><div class="num">8</div><div class="lbl">Carriers tracked</div></div>
+            <div><div class="num">Sep–Nov</div><div class="lbl">2026 coverage</div></div>
+          </div>
+          <div class="cta">Open dashboard
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="https://palm0105.github.io/ningbo-sailing-schedule/" target="_blank" rel="noopener">
+        <div class="topbar"></div>
+        <div class="body">
+          <div class="row-top">
+            <span class="chip">⚓ Origin · Ningbo (CNNGB)</span>
+            <span class="pill">8 carriers</span>
+          </div>
+          <div>
+            <h3>Ningbo Sailing Schedule</h3>
+            <p class="desc">Merged vessel calendar, timeline and table for Ningbo outbound sailings — the same vessel sold by several carriers is combined into one entry.</p>
+          </div>
+          <div class="routes-line">
+            <span>Laem Chabang</span><span>Ho Chi Minh</span><span>Manzanillo</span>
+          </div>
+          <div class="stats">
+            <div><div class="num">645</div><div class="lbl">Sailings tracked</div></div>
+            <div><div class="num">3</div><div class="lbl">Destination routes</div></div>
+            <div><div class="num">8</div><div class="lbl">Carriers tracked</div></div>
+            <div><div class="num">Sep–Dec</div><div class="lbl">2026 coverage</div></div>
+          </div>
+          <div class="cta">Open dashboard
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <div class="add-card">
+        <div class="plus">+</div>
+        <div>Add the next origin port<br>dashboard here</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="fbrand">Sailing Schedule</span> · Heung-A Line
+  </footer>
+</div>
+
 </body>
 </html>
